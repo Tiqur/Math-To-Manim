@@ -1,0 +1,115 @@
+### Scene 1: Lecture Overview & Roadmap
+
+**Background Color:** `#0F172A`
+**Text Color:** `#F8FAFC`
+
+1. **Header (Top Center):** 
+   - `Write` the header: `\text{First-Order Linear ODEs: The Integrating Factor Method}` in size 48.
+   - Position at `UP * 3`.
+
+2. **Vocabulary List (Left Side):**
+   - Create a group of `MathTex` objects at `LEFT * 3.5 + UP * 0.5`.
+   - Line 1: `\text{1. Standard Form: } y' + P(x)y = Q(x)`
+   - Line 2: `\text{2. Integrating Factor: } \mu(x) = e^{\int P(x)dx}`
+   - Line 3: `\text{3. Interval of Validity: Largest open interval containing } x_0 \text{ where } P, Q \text{ are continuous.}`
+   - Use `Write` animation for each line. Color the $\mu(x)$ part with `#38BDF8`.
+
+3. **Roadmap Flowchart (Right Side):**
+   - Create a vertical column of boxes (`SurroundingRectangle`) with text at `RIGHT * 3.5`.
+   - Box 1: `\text{Normalize: Divide by } a_1(x)`
+   - Box 2: `\text{Find } \mu(x)`
+   - Box 3: `\text{Apply Product Rule Reverse}`
+   - Box 4: `\text{Integrate \& Solve for } y`
+   - Box 5: `\text{Determine Interval of Validity}`
+   - Connect Box 1 to Box 2, Box 2 to Box 3, etc., using `CurvedArrow(box_top.get_bottom(), box_bottom.get_top())`.
+   - `Create` boxes and arrows sequentially from top to bottom.
+
+4. **Highlighting Step:**
+   - `Indicate` (scale up/down) the Box 1 text "Normalize" and simultaneously highlight the $y'$ in the Standard Form on the left to show the coefficient must be 1.
+
+---
+
+### Scene 2: Example 1 — Standard Case
+
+**Problem:** Solve $y' + 2y = e^{-x}$ with $y(0) = 3$.
+
+1. **Step 1: Identify (Top Left):**
+   - `Write` the problem: `y' + 2y = e^{-x}`.
+   - Position at `LEFT * 4 + UP * 2.5`.
+   - `Create` a `SurroundingRectangle` (Orange `#FB923C`) around `2` and label it `P(x)`.
+   - `Create` a `SurroundingRectangle` (Sky Blue `#38BDF8`) around `e^{-x}` and label it `Q(x)`.
+
+2. **Step 2: Integrating Factor (Center Left):**
+   - `Write` calculation: `\mu(x) = e^{\int 2 dx} = e^{2x}`.
+   - Position below Step 1. Color the final `e^{2x}` in `#38BDF8`.
+
+3. **Step 3: Transformation (Bottom Left):**
+   - `Write` the multiplication: `e^{2x}(y' + 2y) = e^{2x} \cdot e^{-x}`.
+   - Use `TransformMatchingTex` to rewrite the left side as: `\frac{d}{dx}[e^{2x}y] = e^{x}`.
+
+4. **Step 4: Integration & General Solution (Top Right):**
+   - `Write` at `RIGHT * 3 + UP * 2`: `e^{2x}y = \int e^x dx`.
+   - `Write` next line: `e^{2x}y = e^x + C`.
+   - `Write` solution for $y$: `y(x) = \frac{e^x + C}{e^{2x}} = e^{-x} + Ce^{-2x}`.
+
+5. **Step 5: Initial Value Problem (Center Right):**
+   - `Write`: `y(0) = 3 \implies 3 = e^0 + Ce^0`.
+   - `Write`: `3 = 1 + C \implies C = 2`.
+   - `Write` final solution: `y(x) = e^{-x} + 2e^{-2x}`.
+   - `Circumscribe` the final result in Mint Green `#4ADE80`.
+
+6. **Step 6: Graph (Bottom Right):**
+   - `Create` `Axes` from $x \in [0, 5]$ and $y \in [0, 5]$.
+   - `Plot` the function $f(x) = e^{-x} + 2e^{-2x}$ in Mint Green `#4ADE80`.
+   - `Create` a Dot at $(0, 3)$ to signify the initial condition.
+
+---
+
+### Scene 3: Example 2 — Non-Standard Form & Interval of Validity
+
+**Problem:** Solve $x y' + 2y = 4x^2$ with $y(1) = 2$.
+
+1. **Step 1: Normalization (Top Left):**
+   - `Write` the equation: `x y' + 2y = 4x^2`.
+   - `Create` a `CurvedArrow` pointing from a label `\div x` to the equation.
+   - `Transform` the equation into: `y' + \frac{2}{x}y = 4x`.
+   - Highlight `P(x) = \frac{2}{x}` in Orange `#FB923C`.
+
+2. **Step 2: The Log Shortcut (Center Left):**
+   - `Write`: `\mu(x) = e^{\int \frac{2}{x} dx} = e^{2\ln|x|}`.
+   - `Write`: `\mu(x) = e^{\ln(x^2)}`.
+   - `FadeIn` two Coral Red `#F87171` diagonal lines crossing out the `e` and `\ln`.
+   - `Write` final factor: `\mu(x) = x^2`. Color this `#38BDF8`.
+
+3. **Step 3: Solve (Bottom Left):**
+   - `Write`: `\frac{d}{dx}[x^2 y] = x^2(4x) = 4x^3`.
+   - `Write`: `x^2 y = \int 4x^3 dx = x^4 + C`.
+   - `Write`: `y = x^2 + \frac{C}{x^2}`.
+
+4. **Step 4: IVP & Interval (Right Side):**
+   - Solve for C: `y(1) = 2 \implies 2 = 1^2 + \frac{C}{1^2} \implies C = 1`.
+   - Final solution: `y = x^2 + \frac{1}{x^2}`.
+   - `Create` a `NumberLine` at `RIGHT * 3 + DOWN * 1`.
+   - Mark $x=0$ with a Coral Red `#F87171` cross `X`.
+   - Mark $x_0 = 1$ with a Green dot.
+   - `Highlight` the interval $(0, \infty)$ on the number line using a thick colored line segment.
+   - `Write` text: `\text{Interval: } (0, \infty)` below the number line.
+
+---
+
+### Scene 4: Summary Checklist
+
+1. **Checklist Table (Centered):**
+   - `Create` a vertical list of text with empty square brackets `[ ]`.
+   - Item 1: `\text{[ ] Coefficient of } y' \text{ is 1?}`
+   - Item 2: `\text{[ ] } \mu(x) = e^{\int P(x)dx} \text{ calculated correctly?}`
+   - Item 3: `\text{[ ] Multiply entire RHS by } \mu(x)?`
+   - Item 4: `\text{[ ] Added } +C \text{ before dividing by } \mu(x)?`
+   - Item 5: `\text{[ ] Interval contains } x_0?`
+   - One by one, `Create` a Mint Green `#4ADE80` checkmark `\checkmark` inside each bracket with a `Pop` scale effect (Scale 1.2 then back to 1.0).
+
+2. **Final Formula Box (Bottom Center):**
+   - `Write` the general solution formula: `y = \frac{1}{\mu(x)} \left[ \int \mu(x)Q(x)dx + C \right]`.
+   - Color $\mu(x)$ in `#38BDF8`.
+   - `Create` a `SurroundingRectangle` around the entire formula.
+   - `FadeOut` everything else on screen except this boxed formula.

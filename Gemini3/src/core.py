@@ -6,7 +6,8 @@ from rich.panel import Panel
 from rich.logging import RichHandler
 
 # Configuration
-DEFAULT_MODEL = "gemini-3-pro-preview" 
+#DEFAULT_MODEL = "gemini-3-pro-preview" 
+DEFAULT_MODEL = "gemini-3-flash-preview" 
 API_KEY_ENV_VAR = "GOOGLE_API_KEY"
 
 class RichLogger:

@@ -1,448 +1,222 @@
 from manim import *
-import numpy as np
+from manim_voiceover import VoiceoverScene
+from gemini_tts_service import GeminiTTSService
 
-# Global Configuration
-config.background_color = "#111111"
-# config.frame_rate = 60
-# config.pixel_width = 1920
-# config.pixel_height = 1080
+# Global Style Settings
+config.background_color = "#0F172A"
+PRIMARY_COLOR = "#F8FAFC"
+HIGHLIGHT_PARTICULAR = "#FACC15"  # Yellow
+HIGHLIGHT_HOMOGENEOUS = "#60A5FA" # Blue
+HIGHLIGHT_DISCONTINUITY = "#F87171" # Red
 
-class DissipativeStructures(ThreeDScene):
+class MyScene(VoiceoverScene):
     def construct(self):
-        # --- Helper Variables ---
-        self.mu_tracker = ValueTracker(-2)  # For Act IV
-        
-        # --- Execution Flow ---
-        self.act_one_chaos()
-        self.act_two_departure()
-        self.act_three_linear()
-        self.act_four_bifurcation()
-        self.act_five_dissipative()
+        self.set_speech_service(GeminiTTSService(
+            model="gemini-2.5-flash-preview-tts",
+            voice="Kore",
+            style_context="You are narrating an educational math animation. Adapt your tone and pacing to match this description: This verbose anim",
+        ))
 
-    def act_one_chaos(self):
-        """ACT I: The Box of Chaos (The Static World)"""
-        
-        # 1. Setup Camera and Cube
-        self.set_camera_orientation(phi=75 * DEGREES, theta=45 * DEGREES)
-        
-        cube = Cube(side_length=4, fill_opacity=0, stroke_color=WHITE, stroke_opacity=0.3)
-        self.add(cube)
-        
-        # 2. Particle Generation (Brownian Motion)
-        particles = VGroup()
-        for _ in range(150):
-            dot = Dot3D(radius=0.05, color="#A9A9A9")
-            # Random initial position
-            dot.move_to(np.array([
-                np.random.uniform(-1.8, 1.8),
-                np.random.uniform(-1.8, 1.8),
-                np.random.uniform(-1.8, 1.8)
-            ]))
-            particles.add(dot)
-        
-        # Define Brownian updater
-        def brownian_updater(mob, dt):
-            speed = 2.0
-            shift_vect = np.random.normal(0, speed * dt, 3)
-            new_pos = mob.get_center() + shift_vect
-            # Simple box clamp
-            for i in range(3):
-                if abs(new_pos[i]) > 1.9:
-                    shift_vect[i] *= -1 
-            mob.shift(shift_vect)
+        # --- Scene 1: Lecture Overview ---
+        with self.voiceover(text="In this lecture, we will explore solving second order linear differential equations with piecewise forcing functions.") as tracker:
+            title = MathTex(r"\text{Solving 2nd Order Linear ODEs}", color=PRIMARY_COLOR).to_edge(UP)
+            eq_box = MathTex(r"a y'' + b y' + c y = g(t)", color=PRIMARY_COLOR).scale(1.2).shift(UP * 0.5)
+            self.play(FadeIn(title))
+            eq_rect = SurroundingRectangle(eq_box, color=PRIMARY_COLOR)
+            self.play(FadeIn(eq_rect), FadeIn(eq_box))
 
-        for p in particles:
-            p.add_updater(brownian_updater)
+        with self.voiceover(text="Note the difference between homogeneous and non-homogeneous cases, and how step functions require C1 continuity.") as tracker:
+            sidebar = VGroup(
+                MathTex(r"\text{Homogeneous: } g(t) = 0", font_size=30),
+                MathTex(r"\text{Non-Homogeneous: } g(t) \neq 0", font_size=30),
+                MathTex(r"\text{Step Function: } u(t-c)", font_size=30),
+                MathTex(r"C^1 \text{ Continuity: } y, y' \text{ smooth}", font_size=30)
+            ).arrange(DOWN, aligned_edge=LEFT).to_edge(LEFT).shift(DOWN * 1)
+            self.play(FadeIn(sidebar))
 
-        # Sequence 0:00 - 0:10 (The Random Gas)
-        title_text = Tex("The Isolated System").to_corner(UL)
-        self.add_fixed_in_frame_mobjects(title_text)
+        with self.voiceover(text="We follow a systematic flowchart: identify the forcing function, solve for the homogeneous solution, find the particular solution, and finally stitch the solutions at the jumps.") as tracker:
+            box1 = MathTex(r"\text{Identify } g(t)", font_size=28)
+            box2 = MathTex(r"\text{Solve Homogeneous } y_h", font_size=28)
+            box3 = MathTex(r"\text{Find Particular } y_p", font_size=28)
+            box4 = MathTex(r"\text{Stitch at Jumps}", font_size=28, color=HIGHLIGHT_DISCONTINUITY)
+            
+            flowchart = VGroup(box1, box2, box3, box4).arrange(DOWN, buff=0.6).to_edge(RIGHT).shift(DOWN * 1)
+            arrows = VGroup(*[Arrow(flowchart[i].get_bottom(), flowchart[i+1].get_top(), buff=0.1) for i in range(len(flowchart)-1)])
+            
+            self.play(LaggedStart(FadeIn(flowchart), FadeIn(arrows), lag_ratio=0.5))
+            self.play(Indicate(box4))
         
-        self.play(FadeIn(cube), FadeIn(particles), Write(title_text))
-        self.begin_ambient_camera_rotation(rate=0.2)
+        self.wait(1)
+        self.play(FadeOut(title, eq_box, eq_rect, sidebar, flowchart, arrows))
+
+        # --- Scene 2: The Continuous Case ---
+        with self.voiceover(text="Let's look at a continuous example: y double prime plus 3y prime plus 2y equals 4e to the t, with specific initial conditions.") as tracker:
+            problem = MathTex(r"y'' + 3y' + 2y = 4e^t", color=PRIMARY_COLOR).to_corner(UL)
+            ics = MathTex(r"y(0)=1, y'(0)=0", font_size=30).next_to(problem, DOWN, aligned_edge=LEFT)
+            self.play(FadeIn(problem), FadeIn(ics))
+
+        with self.voiceover(text="First, we find the homogeneous solution using the characteristic equation.") as tracker:
+            char_eq = MathTex(r"r^2 + 3r + 2 = 0").shift(UP * 0.5)
+            char_eq_fact = MathTex(r"(r+1)(r+2)=0").move_to(char_eq)
+            roots = MathTex(r"r = -1, -2").next_to(char_eq_fact, DOWN)
+            yh = MathTex(r"y_h(t) = c_1e^{-t} + c_2e^{-2t}", color=HIGHLIGHT_HOMOGENEOUS).next_to(roots, DOWN)
+            
+            self.play(FadeIn(char_eq))
+            self.wait(0.5)
+            self.play(ReplacementTransform(char_eq, char_eq_fact))
+            self.play(FadeIn(roots), FadeIn(yh))
+
+        with self.voiceover(text="For the particular solution, we guess y sub p equals A e to the t. Substituting this back gives 6A equals 4, so A is two thirds.") as tracker:
+            particular_group = VGroup(
+                MathTex(r"\text{Guess: } y_p = Ae^t"),
+                MathTex(r"(A + 3A + 2A)e^t = 4e^t"),
+                MathTex(r"6A = 4 \Rightarrow A = 2/3", color=HIGHLIGHT_PARTICULAR)
+            ).arrange(DOWN).scale(0.85).next_to(yh, DOWN, buff=0.4)
+            
+            self.play(FadeIn(particular_group[0]))
+            self.play(FadeIn(particular_group[1]))
+            self.play(Indicate(particular_group[2]), FadeIn(particular_group[2]))
+
+        with self.voiceover(text="The general solution combines both parts. Here is the plot for our specific initial conditions.") as tracker:
+            gen_sol = MathTex(r"y(t) = c_1e^{-t} + c_2e^{-2t} + \frac{2}{3}e^t").to_edge(DOWN).shift(UP * 0.5)
+            # Clear derivation steps to prevent overlap with gen_sol at bottom
+            self.play(FadeOut(char_eq_fact, roots, yh, particular_group))
+            self.play(FadeIn(gen_sol))
+            self.wait(1)
+            self.play(FadeOut(gen_sol))
+
+            axes = Axes(x_range=[0, 3, 1], y_range=[0, 15, 5], axis_config={"color": PRIMARY_COLOR}).scale(0.7).shift(DOWN * 0.5)
+            labels = axes.get_axis_labels()
+            # Plot 1.66*exp(-2*x) - 1.33*exp(-x) + 0.66*exp(x)
+            graph = axes.plot(lambda x: 1.66*np.exp(-2*x) - 1.33*np.exp(-x) + 0.66*np.exp(x), x_range=[0, 3], color=HIGHLIGHT_HOMOGENEOUS)
+            self.play(FadeIn(axes), FadeIn(labels))
+            self.play(FadeIn(graph))
+        self.wait(1)
+        self.play(FadeOut(problem, ics, axes, labels, graph))
+
+        # --- Scene 3: Handling Discontinuity ---
+        with self.voiceover(text="Now consider a discontinuous forcing function g of t. It jumps from five down to zero at t equals 2.") as tracker:
+            axes3 = Axes(x_range=[0, 4, 1], y_range=[0, 6, 1]).scale(0.7).to_edge(UP)
+            g1 = Line(axes3.c2p(0, 5), axes3.c2p(2, 5), color=HIGHLIGHT_PARTICULAR)
+            g2 = Line(axes3.c2p(2, 0), axes3.c2p(4, 0), color=HIGHLIGHT_PARTICULAR)
+            open_circle = Circle(radius=0.1, color=HIGHLIGHT_PARTICULAR).move_to(axes3.c2p(2, 5))
+            closed_circle = Dot(axes3.c2p(2, 0), color=HIGHLIGHT_PARTICULAR)
+            
+            discon_line = DashedLine(axes3.c2p(2, 0), axes3.c2p(2, 6), color=HIGHLIGHT_DISCONTINUITY)
+            self.play(FadeIn(axes3), FadeIn(g1), FadeIn(g2), FadeIn(open_circle), FadeIn(closed_circle))
+            self.play(FadeIn(discon_line))
+
+        with self.voiceover(text="At the discontinuity, the solution y of t must remain smooth, meaning both the function and its first derivative must be continuous.") as tracker:
+            text_discon = Text("At t=2, g(t) is discontinuous. y(t) must be C1.", font_size=24, color=PRIMARY_COLOR).next_to(axes3, DOWN)
+            logic = VGroup(
+                MathTex(r"\lim_{t \to 2^-} y_1(t) = \lim_{t \to 2^+} y_2(t)"),
+                MathTex(r"\lim_{t \to 2^-} y'_1(t) = \lim_{t \to 2^+} y'_2(t)")
+            ).arrange(DOWN, buff=0.3).next_to(text_discon, DOWN)
+            
+            self.play(FadeIn(text_discon))
+            self.play(FadeIn(logic))
+            self.play(Indicate(closed_circle))
+
+        self.wait(1)
+        self.play(FadeOut(axes3, g1, g2, open_circle, closed_circle, discon_line, text_discon, logic))
+
+        # --- Scene 4: Piecewise Example (Part 1) ---
+        with self.voiceover(text="Let's solve a specific piecewise problem where the forcing function is 1 until pi, and 0 afterwards.") as tracker:
+            main_eq = MathTex(r"y'' + y = \begin{cases} 1 & 0 \le t < \pi \\ 0 & t \ge \pi \end{cases}").to_edge(UP)
+            label1 = Text("Interval 1: 0 <= t < pi", font_size=24).next_to(main_eq, DOWN)
+            eq1 = MathTex(r"y'' + y = 1, \quad y(0)=0, y'(0)=0").next_to(label1, DOWN)
+            self.play(FadeIn(main_eq))
+            self.play(FadeIn(label1), FadeIn(eq1))
+
+        with self.voiceover(text="In the first interval, the homogeneous solution is cosine plus sine, and the particular solution is 1. Solving for initial conditions gives y1 equals 1 minus cosine t.") as tracker:
+            sol_comp = VGroup(
+                MathTex(r"y_h = c_1\cos(t) + c_2\sin(t)"),
+                MathTex(r"y_p = 1")
+            ).arrange(DOWN).next_to(eq1, DOWN)
+            
+            solving_c = VGroup(
+                MathTex(r"y(0) = c_1(1) + c_2(0) + 1 = 0 \Rightarrow c_1 = -1"),
+                MathTex(r"y'(0) = -c_1(0) + c_2(1) = 0 \Rightarrow c_2 = 0")
+            ).arrange(DOWN).next_to(sol_comp, DOWN)
+            
+            res1 = MathTex(r"y_1(t) = 1 - \cos(t)", color=HIGHLIGHT_HOMOGENEOUS).move_to(sol_comp)
+            
+            self.play(FadeIn(sol_comp))
+            self.play(FadeIn(solving_c))
+            self.wait(0.5)
+            self.play(FadeOut(sol_comp, solving_c), FadeIn(res1))
+
+        with self.voiceover(text="At the hand-off point pi, we calculate the values of y and y prime to use as initial conditions for the next interval.") as tracker:
+            handoff_label = Text("At t = pi:", font_size=24).to_edge(LEFT).shift(DOWN * 1)
+            handoff_vals = VGroup(
+                MathTex(r"y_1(\pi) = 1 - (-1) = 2"),
+                MathTex(r"y'_1(\pi) = \sin(\pi) = 0")
+            ).arrange(DOWN).next_to(handoff_label, DOWN).set_color(HIGHLIGHT_DISCONTINUITY)
+            
+            self.play(FadeIn(handoff_label))
+            self.play(FadeIn(handoff_vals))
+            self.play(AnimationGroup(Indicate(handoff_vals[0]), Indicate(handoff_vals[1])))
+        
+        self.wait(1)
+        saved_vals = handoff_vals.copy().to_corner(UR).scale(0.8)
+        self.play(FadeOut(label1, eq1, res1, handoff_label, handoff_vals), FadeIn(saved_vals))
+
+        # --- Scene 5: Piecewise Example (Part 2) ---
+        with self.voiceover(text="Now for the second interval where t is greater than pi, the equation becomes homogeneous. We use our previous hand-off values as the new initial conditions.") as tracker:
+            label2 = Text("Interval 2: t >= pi", font_size=24).next_to(main_eq, DOWN)
+            eq2 = MathTex(r"y'' + y = 0").next_to(label2, DOWN)
+            ics2 = MathTex(r"y_2(\pi) = 2, \quad y'_2(\pi) = 0").next_to(eq2, DOWN)
+            self.play(FadeIn(label2), FadeIn(eq2))
+            self.play(FadeIn(ics2))
+
+        with self.voiceover(text="Solving the homogeneous equation with these conditions, we find that A is negative two and B is zero.") as tracker:
+            y2_gen = MathTex(r"y_2(t) = A\cos(t) + B\sin(t)").next_to(ics2, DOWN)
+            y2_solve1 = MathTex(r"A\cos(\pi) + B\sin(\pi) = 2 \Rightarrow -A = 2 \Rightarrow A = -2").next_to(y2_gen, DOWN, buff=0.4)
+            y2_solve2 = MathTex(r"-A\sin(\pi) + B\cos(\pi) = 0 \Rightarrow -B = 0 \Rightarrow B = 0").next_to(y2_solve1, DOWN)
+            
+            self.play(FadeIn(y2_gen))
+            self.play(FadeIn(y2_solve1))
+            self.play(FadeIn(y2_solve2))
+        
+        with self.voiceover(text="This gives us y2 equals negative 2 cosine t. The final piecewise solution is shown here.") as tracker:
+            res2 = MathTex(r"y_2(t) = -2\cos(t)", color=HIGHLIGHT_PARTICULAR).move_to(y2_gen)
+            final_piecewise = MathTex(r"y(t) = \begin{cases} 1 - \cos(t) & 0 \le t < \pi \\ -2\cos(t) & t \ge \pi \end{cases}").scale(0.85).to_edge(DOWN).shift(UP * 0.5)
+            
+            self.play(FadeOut(y2_gen, y2_solve1, y2_solve2), FadeIn(res2))
+            self.play(FadeIn(final_piecewise))
+            
+        self.wait(1)
+        # Keep final_piecewise for Scene 6 as per blueprint
+        self.play(FadeOut(main_eq, label2, eq2, ics2, res2, saved_vals))
+
+        # --- Scene 6: Final Visualization ---
+        with self.voiceover(text="Finally, let's visualize the complete stitched solution. Notice the smooth transition at pi.") as tracker:
+            axes6 = Axes(x_range=[0, 2*PI, PI], y_range=[-2.5, 2.5, 1], x_length=6, y_length=4).to_edge(LEFT).shift(UP * 0.5)
+            pi_label = MathTex(r"\pi").move_to(axes6.c2p(PI, -0.4))
+            twopi_label = MathTex(r"2\pi").move_to(axes6.c2p(2*PI, -0.4))
+            
+            # Plot y1 = 1 - cos(t) [0, PI]
+            graph1 = axes6.plot(lambda x: 1 - np.cos(x), x_range=[0, PI], color=HIGHLIGHT_HOMOGENEOUS)
+            # Plot y2 = -2*cos(t) [PI, 2*PI]
+            graph2 = axes6.plot(lambda x: -2 * np.cos(x), x_range=[PI, 2*PI], color=HIGHLIGHT_PARTICULAR)
+            
+            v_line = DashedLine(axes6.c2p(PI, -2.5), axes6.c2p(PI, 2.5), color=HIGHLIGHT_DISCONTINUITY)
+            
+            self.play(FadeIn(axes6), FadeIn(pi_label), FadeIn(twopi_label))
+            self.play(FadeIn(graph1))
+            self.play(FadeIn(v_line))
+            self.play(FadeIn(graph2))
+
+        with self.voiceover(text="To recap: solve the first phase, calculate boundary values, use them as initial conditions for the second phase, and state the final piecewise form.") as tracker:
+            checklist = VGroup(
+                MathTex(r"1. \text{ Solve Phase 1 } \checkmark"),
+                MathTex(r"2. \text{ Boundary values } y, y' \checkmark"),
+                MathTex(r"3. \text{ Use as ICs for Phase 2 } \checkmark"),
+                MathTex(r"4. \text{ Final Piecewise Form } \checkmark")
+            ).arrange(DOWN, aligned_edge=LEFT).scale(0.8).to_edge(RIGHT)
+            
+            for item in checklist:
+                self.play(FadeIn(item))
+                self.wait(0.2)
+        
         self.wait(3)
-
-        # Sequence 0:10 - 0:20 (The Mathematical Lens)
-        # Using raw strings for latex
-        math_grad = MathTex(r"\nabla", color="#4AF626").move_to(LEFT * 3 + UP * 2)
-        math_int = MathTex(r"\int", color="#4AF626").move_to(RIGHT * 3 + DOWN * 2)
-        math_dist = MathTex(r"P(v) \sim e^{-mv^2/2kT}", color="#4AF626").move_to(UP * 3)
-        
-        # Ensure math faces camera
-        for m in [math_grad, math_int, math_dist]:
-            self.add_fixed_in_frame_mobjects(m)
-
-        self.play(
-            FadeIn(math_grad, scale=0.5),
-            FadeIn(math_int, scale=0.5),
-            FadeIn(math_dist, scale=0.5),
-            particles.animate.set_color("#4AF626"),
-            run_time=2
-        )
-        self.wait(1)
-        self.play(particles.animate.set_color("#A9A9A9"), run_time=1)
-
-        # Sequence 0:20 - 0:30 (Equilibrium Death)
-        # Remove updaters to stop motion
-        for p in particles:
-            p.clear_updaters()
-        
-        # Animate settling to grid/even distribution
-        target_positions = []
-        # Create a rough 5x5x6 grid for 150 particles
-        for x in np.linspace(-1.5, 1.5, 5):
-            for y in np.linspace(-1.5, 1.5, 5):
-                for z in np.linspace(-1.5, 1.5, 6):
-                    target_positions.append([x,y,z])
-        
-        animations = []
-        for i, p in enumerate(particles):
-            if i < len(target_positions):
-                animations.append(p.animate.move_to(target_positions[i]).set_color("#555555"))
-        
-        entropy_eq = MathTex(r"S = k_B \ln \Omega", font_size=70).set_z_index(10)
-        self.add_fixed_in_frame_mobjects(entropy_eq)
-
-        entropy_label = Tex(r"Entropy ($S$): ").to_corner(DR)
-        entropy_tracker = DecimalNumber(0).next_to(entropy_label, RIGHT)
-        self.add_fixed_in_frame_mobjects(entropy_label, entropy_tracker)
-
-        self.play(
-            AnimationGroup(*animations, lag_ratio=0.01),
-            FadeIn(entropy_eq),
-            ChangeDecimalToValue(entropy_tracker, 9999, run_time=3),
-            run_time=4
-        )
-        
-        death_text = Tex("Equilibrium = Maximum Entropy = Thermal Death", color=RED).to_edge(DOWN)
-        self.add_fixed_in_frame_mobjects(death_text)
-        self.wait(2)
-
-        # Cleanup Act I
-        self.stop_ambient_camera_rotation()
-        self.clear()
-        # Reset camera to standard 2D view (top down logic)
-        self.set_camera_orientation(phi=0, theta=-90 * DEGREES)
-
-    def act_two_departure(self):
-        """ACT II: The Departure (Gears and Gradients)"""
-        
-        # Sequence 0:30 - 0:40 (Imposing the Gradient)
-        # Create 10x6 Grid
-        grid = VGroup()
-        rows, cols = 6, 10
-        for r in range(rows):
-            for c in range(cols):
-                sq = Square(side_length=0.8)
-                sq.move_to(np.array([c - cols/2 + 0.5, r - rows/2 + 0.5, 0]))
-                grid.add(sq)
-        
-        grid.set_stroke(WHITE)
-        grid.set_fill(color=GREY, opacity=0.5)
-        grid.center()
-        
-        self.play(Create(grid), run_time=2)
-        
-        # Apply Gradient
-        def get_gradient_color(mob):
-            # Map x position to color
-            x = mob.get_x()
-            alpha = (x + 5) / 10  # Normalize roughly -5 to 5 -> 0 to 1
-            return interpolate_color(Color("#FF5733"), Color("#33C1FF"), alpha)
-
-        self.play(
-            grid.animate.set_submobject_colors_by_gradient("#FF5733", "#33C1FF"),
-            run_time=2
-        )
-
-        flux_arrows = VGroup()
-        for i in range(15):
-            arr = Arrow(LEFT, RIGHT, color="#FFD700").scale(0.8)
-            arr.move_to(np.array([np.random.uniform(-4, 4), np.random.uniform(-2, 2), 0]))
-            flux_arrows.add(arr)
-        
-        text_gradient = Tex("Imposing a Gradient implies Flow").to_edge(UP)
-        self.play(FadeIn(flux_arrows), Write(text_gradient))
-        self.wait(1)
-
-        # Sequence 0:40 - 0:50 (The Local View)
-        # We simulate a zoom by scaling everything up and shifting
-        target_square = grid[35] # Middle-ish square
-        zoom_group = VGroup(grid, flux_arrows)
-        
-        # Zoom effect
-        self.play(
-            FadeOut(text_gradient),
-            self.camera.animate.set_width(grid[0].width * 4).move_to(target_square.get_center()),
-            run_time=2
-        )
-
-        # Micro-physics inside the square
-        micro_dots = VGroup(*[Dot(radius=0.02, color=WHITE) for _ in range(20)])
-        micro_dots.move_to(target_square.get_center())
-        
-        # Constrain dots to target square
-        def local_updater(mob, dt):
-            mob.shift(np.random.normal(0, 0.5*dt, 3))
-            diff = mob.get_center() - target_square.get_center()
-            if abs(diff[0]) > 0.35: mob.shift(np.array([-diff[0]*0.1, 0, 0]))
-            if abs(diff[1]) > 0.35: mob.shift(np.array([0, -diff[1]*0.1, 0]))
-
-        for d in micro_dots:
-            d.add_updater(local_updater)
-        
-        self.add(micro_dots)
-        
-        local_eq = MathTex(r"T ds = du + P dv", color=WHITE).scale(0.3)
-        local_eq.move_to(target_square.get_center() + UP*0.2)
-        local_eq.set_opacity(0.8)
-        
-        self.play(FadeIn(local_eq))
-        
-        # Sequence 0:50 - 1:00 (The Continuity Check)
-        balance_eq = MathTex(r"\partial_t \rho + \nabla \cdot \mathbf{J} = 0", color=YELLOW)
-        balance_eq.scale(0.3).next_to(target_square, DOWN, buff=0.1)
-        
-        self.play(
-            target_square.animate.set_fill(opacity=0.8, color=YELLOW_E),
-            Write(balance_eq)
-        )
-        self.wait(2)
-        
-        # Reset Camera for next Act
-        self.play(
-             self.camera.animate.set_width(config.frame_width).move_to(ORIGIN),
-             FadeOut(zoom_group), FadeOut(micro_dots), FadeOut(local_eq), FadeOut(balance_eq)
-        )
-
-    def act_three_linear(self):
-        """ACT III: The Linear Regime (Coupled Forces)"""
-        
-        # Sequence 1:00 - 1:15
-        
-        # Create Helper Function for Gears
-        def create_gear(color, radius=1, teeth=8):
-            inner = Circle(radius=radius, fill_color=color, fill_opacity=0.5, stroke_color=color)
-            teeth_group = VGroup()
-            for i in range(teeth):
-                angle = i * (TAU / teeth)
-                tooth = Square(side_length=radius/3).set_fill(color, 1).set_stroke(width=0)
-                tooth.move_to((radius + radius/6) * np.array([np.cos(angle), np.sin(angle), 0]))
-                tooth.rotate(angle)
-                teeth_group.add(tooth)
-            return VGroup(inner, teeth_group)
-
-        gear1 = create_gear(RED, radius=1.5).shift(LEFT * 2)
-        gear2 = create_gear(YELLOW, radius=1.5).shift(RIGHT * 0.8) # Meshed roughly
-        
-        # Labels
-        label1 = Tex(r"Thermal Force $X_Q$", font_size=24).next_to(gear1, DOWN)
-        label2 = Tex(r"Diffusion $J_D$", font_size=24).next_to(gear2, DOWN)
-        
-        self.play(DrawBorderThenFill(gear1), DrawBorderThenFill(gear2), Write(label1), Write(label2))
-
-        # Rotate Gears
-        # Gear 1 rotates CW (-), Gear 2 rotates CCW (+)
-        gear1.add_updater(lambda m, dt: m.rotate(-1 * dt))
-        gear2.add_updater(lambda m, dt: m.rotate(1 * dt))
-        
-        # Onsager Matrix
-        onsager = MathTex(
-            r"\begin{bmatrix} J_1 \\ J_2 \end{bmatrix} = \begin{bmatrix} L_{11} & L_{12} \\ L_{21} & L_{22} \end{bmatrix} \begin{bmatrix} X_1 \\ X_2 \end{bmatrix}"
-        ).to_edge(RIGHT).scale(0.8)
-        
-        # Highlight Reciprocity
-        reciprocity = SurroundingRectangle(onsager[0][13:21], color=BLUE) # Roughly indices for L12, L21
-        
-        self.play(Write(onsager))
-        self.play(Create(reciprocity))
-        self.wait(1)
-        
-        # Entropy Production (Dust)
-        contact_point = (gear1.get_center() + gear2.get_center()) / 2
-        dust = VGroup()
-        
-        def dust_updater(mob, dt):
-            if len(mob) < 30:
-                d = Dot(radius=0.03, color=GREY)
-                d.move_to(contact_point)
-                d.velocity = np.array([np.random.uniform(-0.5, 0.5), -1, 0])
-                mob.add(d)
-            for d in mob:
-                d.shift(d.velocity * dt)
-                d.set_opacity(d.get_opacity() - 0.5 * dt)
-                if d.get_opacity() <= 0:
-                    mob.remove(d)
-
-        dust.add_updater(dust_updater)
-        self.add(dust)
-        
-        entropy_prod = MathTex(r"\sigma = \sum J_i X_i \geq 0", color=RED).to_edge(UP)
-        self.play(Write(entropy_prod))
-        self.wait(2)
-        
-        # Cleanup
-        gear1.clear_updaters()
-        gear2.clear_updaters()
-        dust.clear_updaters()
-        self.clear()
-
-    def act_four_bifurcation(self):
-        """ACT IV: The Fork in the Road (Bifurcation)"""
-        
-        # Sequence 1:15 - 1:30
-        
-        # Reset to 3D View
-        self.set_camera_orientation(phi=70 * DEGREES, theta=-90 * DEGREES)
-        self.camera.zoom = 1 # Reset zoom just in case
-        
-        # Axes
-        axes = ThreeDAxes(x_range=[-3, 3], y_range=[-3, 3], z_range=[-5, 5], z_length=4)
-        
-        # Initial Mu
-        self.mu_tracker.set_value(-2)
-        
-        # Parametric Surface: z = x^4 - mu*x^2 (visualized as a ribbon/extruded curve along Y)
-        # To optimize, we'll draw a dense series of lines or a low-res surface
-        
-        def get_surface():
-            mu = self.mu_tracker.get_value()
-            # Color logic
-            c = BLUE if mu < 0 else RED
-            
-            surf = Surface(
-                lambda u, v: axes.c2p(u, v, u**4 - mu * u**2),
-                u_range=[-2, 2],
-                v_range=[-1, 1], # Short strip in Y
-                resolution=(20, 4),
-                fill_opacity=0.6
-            )
-            surf.set_style(fill_color=c, stroke_color=WHITE, stroke_width=0.5)
-            return surf
-
-        surface_obj = always_redraw(get_surface)
-        self.add(axes, surface_obj)
-        
-        # The Ball (Sphere)
-        sphere = Sphere(radius=0.2, color=YELLOW)
-        
-        def update_sphere(mob):
-            mu = self.mu_tracker.get_value()
-            # If mu < 0, stable at x=0
-            # If mu > 0, stable at +/- sqrt(mu/2). Let's pick + side
-            x_pos = 0
-            if mu > 0:
-                x_pos = np.sqrt(mu/2)
-            
-            # Position on surface
-            z_pos = x_pos**4 - mu * x_pos**2
-            mob.move_to(axes.c2p(x_pos, 0, z_pos) + UP*0.2) # Sit on top
-
-        sphere.add_updater(update_sphere)
-        self.add(sphere)
-        
-        # UI: Flux Slider / Text
-        val_text = Tex("Flux $\mu$: ").to_corner(UL)
-        val_num = DecimalNumber().next_to(val_text, RIGHT)
-        val_num.add_updater(lambda m: m.set_value(self.mu_tracker.get_value()))
-        self.add_fixed_in_frame_mobjects(val_text, val_num)
-        
-        # Animation: Morph
-        self.play(
-            self.mu_tracker.animate.set_value(5),
-            run_time=6,
-            rate_func=linear
-        )
-        
-        bif_text = Tex("Symmetry Breaking", color=YELLOW).to_edge(UP)
-        self.add_fixed_in_frame_mobjects(bif_text)
-        self.play(FadeIn(bif_text))
-        self.wait(2)
-        
-        self.clear()
-        sphere.clear_updaters()
-        val_num.clear_updaters()
-        surface_obj.clear_updaters()
-
-    def act_five_dissipative(self):
-        """ACT V: Dissipative Structures (Order out of Chaos)"""
-        
-        # Sequence 1:30 - End
-        self.set_camera_orientation(phi=0, theta=-90*DEGREES)
-        
-        # Hex Grid
-        hex_group = VGroup()
-        # Create a honeycomb
-        radius = 0.5
-        y_step = radius * 1.5
-        x_step = radius * np.sqrt(3)
-        
-        for i in range(-5, 6):
-            for j in range(-5, 6):
-                # Offset every other row
-                x_offset = 0 if i % 2 == 0 else x_step / 2
-                pos = np.array([j * x_step + x_offset, i * y_step, 0])
-                
-                h = RegularPolygon(n=6, radius=radius, start_angle=30*DEGREES)
-                h.move_to(pos)
-                h.set_fill(color=GREY, opacity=0.5)
-                h.set_stroke(color=WHITE, width=1)
-                hex_group.add(h)
-                
-        # Random coloring initially
-        for h in hex_group:
-            h.set_fill(color=random_color())
-            
-        self.add(hex_group)
-        
-        # The Emergence (Transform to Benard Cells)
-        # Center Yellow, Edge Blue
-        self.play(
-            hex_group.animate.set_fill(color="#F1C40F", opacity=0.8)
-                     .set_stroke(color="#2C3E50", width=4),
-            run_time=3
-        )
-        
-        # Flow Visualization (Loops)
-        # We'll create a few sample flow lines in the center hexagon
-        center_hex_pos = ORIGIN
-        loops = VGroup()
-        for i in range(3):
-            # Create an ellipse path
-            loop = Ellipse(width=0.4, height=0.8, color=RED).move_to(center_hex_pos)
-            loops.add(loop)
-            
-        # Animate scaling out to show global structure
-        self.play(
-            hex_group.animate.scale(0.6),
-            run_time=2
-        )
-        
-        thesis = Tex("Structure maintained by Flow", font_size=60).set_z_index(20)
-        thesis_bg = BackgroundRectangle(thesis, color=BLACK, fill_opacity=0.7)
-        self.play(FadeIn(thesis_bg), Write(thesis))
-        
-        # Final Equation
-        final_eq = MathTex(r"d_i S > 0, \quad d_e S < 0", font_size=50).next_to(thesis, DOWN)
-        subtitle = Tex("Entropy is exported to maintain internal order.", font_size=30).next_to(final_eq, DOWN)
-        
-        bg_eq = BackgroundRectangle(VGroup(final_eq, subtitle), color=BLACK, fill_opacity=0.7)
-        
-        self.play(FadeIn(bg_eq), Write(final_eq), Write(subtitle))
-        self.wait(3)
-        
-        # Final Fade
-        final_cap = Tex("Dissipative Structures").scale(1.5)
-        self.play(
-            FadeOut(hex_group), FadeOut(thesis), FadeOut(thesis_bg), 
-            FadeOut(final_eq), FadeOut(subtitle), FadeOut(bg_eq),
-            FadeIn(final_cap)
-        )
-        self.wait(2)
-        self.play(FadeOut(final_cap))
-
-# Helper color function
-def random_color():
-    return [
-        "#555555", "#666666", "#777777", "#444444"
-    ][np.random.randint(0, 4)]
