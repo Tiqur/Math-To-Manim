@@ -1,133 +1,163 @@
 ### Scene 1: Lecture Overview & Roadmap
 
-**Global Style Reminders:**
-- Background: `#0F172A`
-- Text: `#F8FAFC`
-- $p(x)$ highlight: `#FDE047` (Yellow)
-- $g(x)$ highlight: `#22D3EE` (Cyan)
-- $\mu(x)$ highlight: `#FB923C` (Orange)
-- Final Result highlight: `#4ADE80` (Green)
-- Axes color: `#94A3B8` (Slate Gray)
-
----
-
 **Visual-Narrative Block 1**
-- **Narration**: "Today we solve first-order linear differential equations using the Integrating Factor method."
-- **Visual**: Create the title "Solving First-Order Linear ODEs" at the top. Below it, write the general form equation: `a_1(x)y' + a_0(x)y = f(x)`.
+*   **Visual**: Render `Title("Exact Differential Equations: Overview").to_edge(UP)`. Below it, center a box containing the LaTeX: `M(x,y)dx + N(x,y)dy = 0`.
+*   **Narration**: "To solve a first-order differential equation using exactness, we first look for this standard form."
+*   **Action**: `Write` the title and `Create` the box around the standard form equation.
 
 **Visual-Narrative Block 2**
-- **Narration**: "Before we calculate anything, we need a roadmap."
-- **Visual**: Fade in a "Vocabulary" box on the left side of the screen containing the terms: "Linear," "Standard Form," "Integrating Factor," and "Interval of Validity."
+*   **Visual**: On the left side of the screen, a list appears: 
+    1. `Partial Derivative (\partial)`
+    2. `Exactness (M_y = N_x)`
+    3. `Potential Function (\Psi)`
+    4. `Integrating Factor (\mu)`
+*   **Narration**: "Before we dive into the math, you need to be comfortable with partial derivatives and the concept of a total differential."
+*   **Action**: `FadeIn` the vocabulary list one item at a time. Use `Indicate` on the `\partial` symbol during the narration.
 
 **Visual-Narrative Block 3**
-- **Narration**: "Our process follows five strict steps."
-- **Visual**: On the right side, create a vertical flowchart with five boxes:
-  1. Normalize: `y' + p(x)y = g(x)`
-  2. Check Continuity
-  3. Factor: `\mu(x) = e^{\int p(x)dx}`
-  4. Integrate: `\frac{d}{dx}[\mu y] = \mu g`
-  5. Select Interval
+*   **Visual**: On the right side, the Roadmap Flowchart appears: `[Start] \rightarrow [Identify M & N] \rightarrow [Test M_y = N_x]`.
+*   **Narration**: "Our strategy is a three-step process: identify, test, and reconstruct."
+*   **Action**: `Write` the first two steps of the flowchart.
 
 **Visual-Narrative Block 4**
-- **Narration**: "This method works as long as the functions are continuous near our starting point."
-- **Visual**: Apply a pulse highlight (scale up and down slightly) to the term "Interval of Validity" in the Vocabulary box.
+*   **Visual**: Add the branching paths to the flowchart: `\xrightarrow{Yes} [Algorithm for \Psi]` and `\xrightarrow{No} [Find \mu]`.
+*   **Narration**: "Depending on the test result, we either proceed to build the potential function or find an integrating factor."
+*   **Action**: `Write` the two arrows and the final two boxes of the flowchart.
 
 ---
 
-### Scene 2: Standard Form & Continuity Analysis
+### Scene 2: The Exactness Test
 
 **Visual-Narrative Block 5**
-- **Narration**: "Step 1: Normalize. We must have a leading coefficient of 1 for the y-prime term."
-- **Visual**: Clear the screen and write the example problem: `(x^2 - 9)y' + 2xy = \frac{1}{x-5}` with the initial condition `y(4) = 2`. Create a highlight box around the `(x^2 - 9)` term.
+*   **Visual**: `Title("Step 1: The Exactness Test").to_edge(UP)`. In the top right corner, a Rule Box with three unchecked boxes: `[ ] Identify M(x,y)`, `[ ] Identify N(x,y)`, `[ ] Calculate M_y and N_x`.
+*   **Narration**: "Let's start our first example by following our checklist."
+*   **Action**: `Write` title and `FadeIn` the Rule Box.
 
 **Visual-Narrative Block 6**
-- **Narration**: "To do this, we divide every term in the equation by the coefficient of y-prime."
-- **Visual**: Animate the `(x^2 - 9)` term moving as a denominator under `2xy` and `\frac{1}{x-5}`. Transform the equation into: `y' + \frac{2x}{x^2-9}y = \frac{1}{(x-5)(x^2-9)}`.
+*   **Visual**: Center the example equation: `(3x^2 + 4xy)dx + (2x^2 + 2y)dy = 0`.
+*   **Narration**: "Let's look at this equation. Our M is the term attached to dx, and N is attached to dy."
+*   **Action**: `Write` the equation. Then, apply Sky Blue (`#38BDF8`) to `3x^2 + 4xy` and Mint Green (`#4ADE80`) to `2x^2 + 2y`. Put a checkmark in the first two boxes of the Rule Box.
 
 **Visual-Narrative Block 7**
-- **Narration**: "Now we identify p(x) and g(x)."
-- **Visual**: Change the color of the term `\frac{2x}{x^2-9}` to Yellow (`#FDE047`). Change the color of the term `\frac{1}{(x-5)(x^2-9)}` to Cyan (`#22D3EE`).
+*   **Visual**: Below the equation, write the formula: `M_y = N_x`.
+*   **Narration**: "The condition for exactness is that the partial of M with respect to y must equal the partial of N with respect to x."
+*   **Action**: `Write` the formula and `Indicate` it with a brief pulse.
 
 **Visual-Narrative Block 8**
-- **Narration**: "Step 2: Check for discontinuities. Where do these functions blow up?"
-- **Visual**: Below the equation, write the text `x \neq \pm 3, 5` based on the denominators of the yellow and cyan terms.
+*   **Visual**: Show the calculation: `\frac{\partial M}{\partial y} = \frac{\partial}{\partial y}(3x^2 + 4xy)`.
+*   **Narration**: "Differentiating M with respect to y, we treat x as a constant."
+*   **Action**: `Write` the derivative setup.
 
 **Visual-Narrative Block 9**
-- **Narration**: "Visualizing this on a number line, we see four potential intervals."
-- **Visual**: Draw a horizontal number line using color `#94A3B8`. Place open circles at coordinates `-3`, `3`, and `5`. Label the sections between them.
-
----
-
-### Scene 3: Constructing the Integrating Factor (μ)
+*   **Visual**: The term `3x^2` within the derivative becomes semi-transparent (dimmed). The `y` in `4xy` is highlighted in Yellow (`#FDE047`).
+*   **Narration**: "The 3x-squared term vanishes because it doesn't contain y."
+*   **Action**: Set opacity of `3x^2` to 0.3. Use `Circumscribe` on the `y` in `4xy`.
 
 **Visual-Narrative Block 10**
-- **Narration**: "Step 3: The Integrating Factor, mu of x."
-- **Visual**: Clear the screen except for the normalized equation at the top. Write the formula `\mu(x) = e^{\int p(x) dx}` in Orange (`#FB923C`).
+*   **Visual**: The result `4x` appears. Then show the second calculation: `\frac{\partial N}{\partial x} = \frac{\partial}{\partial x}(2x^2 + 2y) = 4x`.
+*   **Narration**: "Differentiating N with respect to x yields the same result: 4x."
+*   **Action**: `Write` the result for $M_y$, then `Write` the full line for $N_x$ in one motion.
 
 **Visual-Narrative Block 11**
-- **Narration**: "We plug in our Yellow p(x) term."
-- **Visual**: Transform the formula by replacing `p(x)` with the yellow term: `\mu(x) = e^{\int \frac{2x}{x^2-9} dx}`.
+*   **Visual**: Center the equality `4x = 4x` and place a large green checkmark over it. Mark the final box in the Rule Box.
+*   **Narration**: "Both result in 4x, so the equation is exact."
+*   **Action**: `Transform` the two results into the equality. `FadeIn` the checkmark.
+
+---
+
+### Scene 3: Potential Function Algorithm
 
 **Visual-Narrative Block 12**
-- **Narration**: "Using a simple u-substitution, the integral becomes the natural log of x-squared minus nine."
-- **Visual**: Show the side-calculation: `u = x^2-9 \implies du = 2x dx`. Then show the integral result: `\int \frac{1}{u} du = \ln|x^2-9|`.
+*   **Visual**: `Title("Step 2: Finding the Potential Function").to_edge(UP)`. Checklist in top right: `[x] M_y = N_x`, `[ ] Integrate M w.r.t x`, `[ ] Solve for g(y)`.
+*   **Narration**: "Because it's exact, there exists a potential function Psi. We find it by integrating M with respect to x."
+*   **Action**: `FadeIn` the setup: `\Psi(x,y) = \int M \, dx + g(y)`.
 
 **Visual-Narrative Block 13**
-- **Narration**: "The exponential and the log cancel out, leaving us with our multiplier."
-- **Visual**: Write `\mu(x) = e^{\ln|x^2-9|}`. Draw a red strike-through line across the `e` and the `\ln`. Transform the expression into its final form: `\mu(x) = x^2-9`.
-
----
-
-### Scene 4: General Solution Integration
+*   **Visual**: Substitute M: `\Psi(x,y) = \int (3x^2 + 4xy) dx + g(y)`.
+*   **Narration**: "We plug our expression for M into the integral."
+*   **Action**: `TransformMatchingTex` from the general setup to the specific integral.
 
 **Visual-Narrative Block 14**
-- **Narration**: "Step 4: Multiply the standard form by mu of x."
-- **Visual**: Display the normalized equation from Scene 2. Show the term `(x^2-9)` appearing and multiplying into every term on both sides.
+*   **Visual**: Show the result of integration: `\Psi(x,y) = x^3 + 2x^2y + g(y)`.
+*   **Narration**: "Integrating term-by-term, we get x-cubed plus 2-x-squared-y."
+*   **Action**: `Write` the result. Use `Indicate` on `x^3` then `2x^2y`.
 
 **Visual-Narrative Block 15**
-- **Narration**: "The left side is now the perfect derivative of mu times y."
-- **Visual**: Compress the left-hand side terms into the derivative notation: `\frac{d}{dx} [ (x^2-9) y ]`.
+*   **Visual**: The term `g(y)` is highlighted in Yellow (`#FDE047`). Check the second box in the checklist.
+*   **Narration**: "Don't forget the constant of integration—since we integrated with respect to x, this constant is a function of y, which we call g of y."
+*   **Action**: `Circumscribe` the `g(y)` term and hold for 2 seconds.
 
 **Visual-Narrative Block 16**
-- **Narration**: "On the right, terms cancel out beautifully, leaving just a simple fraction."
-- **Visual**: On the right side, show `(x^2-9) \cdot \frac{1}{(x-5)(x^2-9)}`. Strike through the `(x^2-9)` in the numerator and denominator. Write the simplified right side: `\frac{1}{x-5}`.
+*   **Visual**: Write: `\frac{\partial \Psi}{\partial y} = N`.
+*   **Narration**: "To find g of y, we differentiate our new Psi with respect to y and set it equal to N."
+*   **Action**: `Write` the formula below the intermediate result.
 
 **Visual-Narrative Block 17**
-- **Narration**: "Now, we integrate both sides."
-- **Visual**: Prepend integral signs and `dx` to both sides: `\int \frac{d}{dx}[(x^2-9)y] dx = \int \frac{1}{x-5} dx`.
+*   **Visual**: Expand the differentiation: `\frac{\partial}{\partial y}(x^3 + 2x^2y + g(y)) = 2x^2 + 2y`.
+*   **Narration**: "Substituting our expression for Psi on the left and our original N on the right."
+*   **Action**: `Write` the equation.
 
 **Visual-Narrative Block 18**
-- **Narration**: "Don't forget the constant of integration, C."
-- **Visual**: Write the resulting algebraic equation: `(x^2-9)y = \ln|x-5| + C`. Highlight the `+ C` in Yellow (`#FDE047`).
-
----
-
-### Scene 5: Interval of Validity & Initial Value
+*   **Visual**: Apply `Cross` to the `2x^2` on the left side and the `2x^2` on the right side.
+*   **Narration**: "Terms involving x should cancel out here. If they don't, check your previous derivative!"
+*   **Action**: `Create` two red crosses over the identical terms.
 
 **Visual-Narrative Block 19**
-- **Narration**: "To find C, we use our initial condition y(4) equals 2."
-- **Visual**: Isolate `y` to get the general solution: `y = \frac{\ln|x-5| + C}{x^2-9}`. Below it, substitute the values: `2 = \frac{\ln|4-5|+C}{4^2-9}`.
-
-**Visual-Narrative Block 20**
-- **Narration**: "Since the natural log of 1 is zero, C equals 14."
-- **Visual**: Simplify the substitution to `2 = \frac{0 + C}{7}` and then write `C = 14`. Update the general solution: `y = \frac{\ln|x-5| + 14}{x^2-9}`.
-
-**Visual-Narrative Block 21**
-- **Narration**: "Finally: Step 5. What is the Interval of Validity?"
-- **Visual**: Bring back the Number Line from Scene 2 to the center of the screen, showing the gaps at `-3`, `3`, and `5`.
-
-**Visual-Narrative Block 22**
-- **Narration**: "Our initial x is 4. We look for the largest continuous interval containing 4."
-- **Visual**: Place a bright dot at the position `x = 4` on the number line. 
-
-**Visual-Narrative Block 23**
-- **Narration**: "The solution is only valid between the discontinuities at x equals 3 and x equals 5."
-- **Visual**: Make the segment of the number line between `3` and `5` glow in Green (`#4ADE80`). Write the final interval: `3 < x < 5`.
+*   **Visual**: Show the simplified equation: `g'(y) = 2y`. Then `g(y) = y^2`. Check the final box in the checklist.
+*   **Narration**: "This leaves us with g-prime of y equals 2y, which integrates easily to y-squared."
+*   **Action**: `TransformMatchingTex` to the simplified form, then `Write` the result for $g(y)$.
 
 ---
 
-### Final Layout (Ending)
+### Scene 4: Non-Exact Case (Integrating Factors)
+
+**Visual-Narrative Block 20**
+*   **Visual**: `Title("When Exactness Fails").to_edge(UP)`. New equation: `y \, dx + (2x - ye^y) \, dy = 0`.
+*   **Narration**: "What if M-sub-y doesn't equal N-sub-x? Let's check this new equation."
+*   **Action**: `Write` the equation.
+
+**Visual-Narrative Block 21**
+*   **Visual**: Show: `M_y = 1` and `N_x = 2`. Below them, `1 \neq 2`.
+*   **Narration**: "Here, the partial of M with respect to y is 1, but the partial of N with respect to x is 2. 1 does not equal 2."
+*   **Action**: `Write` the derivatives. `FadeIn` a red 'X' over the inequality.
+
+**Visual-Narrative Block 22**
+*   **Visual**: Display a formula box:
+    1. `\mu(x) = e^{\int \frac{M_y - N_x}{N} dx}`
+    2. `\mu(y) = e^{\int \frac{N_x - M_y}{M} dy}`
+*   **Narration**: "We need an integrating factor, mu, to force exactness."
+*   **Action**: `FadeIn` the formula box.
+
+**Visual-Narrative Block 23**
+*   **Visual**: Perform calculation: `\frac{N_x - M_y}{M} = \frac{2 - 1}{y} = \frac{1}{y}`.
+*   **Narration**: "We test the residuals. In this case, the second formula gives us 1 over y, which depends only on y."
+*   **Action**: `Write` the calculation. Highlight the result `1/y` in Yellow (`#FDE047`).
 
 **Visual-Narrative Block 24**
-- **Narration**: "Follow these five steps: Normalize, find discontinuities, calculate mu, integrate, and pick your interval based on x-nought."
-- **Visual**: Arrange the screen so the 5-step Roadmap is on the left and the boxed final solution `y = \frac{\ln|x-5| + 14}{x^2-9}` and Interval `(3, 5)` are on the right, all highlighted in Green (`#4ADE80`).
+*   **Visual**: Calculate $\mu$: `\mu(y) = e^{\int \frac{1}{y} dy} = e^{\ln y} = y`.
+*   **Narration**: "This gives us an integrating factor of y."
+*   **Action**: `Write` the steps for $\mu(y)$. `Indicate` the final result `y`.
+
+---
+
+### Scene 5: IVP Finalization
+
+**Visual-Narrative Block 25**
+*   **Visual**: `Title("Initial Value Problems (IVP)").to_edge(UP)`. Write: `x^3 + 2x^2y + y^2 = C`.
+*   **Narration**: "Finally, if you're given an initial condition, like y of 1 equals 2, we solve for the constant C."
+*   **Action**: `FadeIn` the general solution and the condition `y(1) = 2`.
+
+**Visual-Narrative Block 26**
+*   **Visual**: Show substitution: `(1)^3 + 2(1)^2(2) + (2)^2 = C`.
+*   **Narration**: "Substitute 1 for every x and 2 for every y."
+*   **Action**: `TransformMatchingTex` the general solution into the substituted version. Highlight `1` in Yellow and `2` in Mint Green.
+
+**Visual-Narrative Block 27**
+*   **Visual**: `1 + 4 + 4 = C \Rightarrow C = 9`.
+*   **Narration**: "Calculating the left side gives us 9, so C equals 9."
+*   **Action**: `Write` the arithmetic and the result for `C`.
+
+**Visual-Narrative Block 28**
+*   **Visual**: Display: `x^3 + 2x^2y + y^2 = 9`.
+*   **Narration**: "The final solution is the implicit equation set to that specific constant. This result connects back to our original differential equation by satisfying all conditions."
+*   **Action**: `TransformMatchingTex` back to the variable form but replace `C` with `9`. `Surround` the equation with a thick Gold (`#FDE047`) box.

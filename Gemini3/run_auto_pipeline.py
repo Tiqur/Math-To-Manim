@@ -1596,10 +1596,15 @@ For each frame:
 ━━━ RESPONSE FORMAT ━━━
 All good → reply PERFECT (just that word).
 
-Otherwise:
-SEVERITY: CRITICAL or MINOR (first line)
-Detailed issue list.
-If CRITICAL, include a SEARCH/REPLACE patch:
+Otherwise, provide an ISSUE LIST:
+- [CRITICAL] Description of bug...
+- [MINOR] Description of bug...
+
+Then, state the overall SEVERITY:
+SEVERITY: CRITICAL or MINOR
+(If *any* issue is [CRITICAL], the overall severity must be CRITICAL.)
+
+If CRITICAL, include a SEARCH/REPLACE patch to fix it:
 ```
 <<<SEARCH
 [exact lines verbatim]

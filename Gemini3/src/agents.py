@@ -55,6 +55,28 @@ Rules:
 - ImageMobject is only allowed if the file name is explicitly provided by the user; otherwise avoid it.
 - There is no scene count limit. Use as many scenes as the content requires.
 
+PERSISTENT CONTEXT (TITLES & CHECKLISTS):
+- **MANDATORY**: Every scene MUST have a static Title/Header at the top (e.g., `Title("Deriving the Formula").to_edge(UP)`).
+- The title should only change when the major topic changes. Do not clear it between minor steps.
+- Use **Checklists** or **Rule Boxes** in the corner for multi-step procedures. As the narration progresses, check off items or highlight the active rule.
+
+NO "HAND-WAVING" (PEDAGOGICAL VISUALIZATION):
+- **Explicit Constants**: When differentiating or integrating, DO NOT just show the result.
+  - Visually "dim" or "gray out" constants that are being ignored.
+  - Highlight the active variable (e.g., turn 'x' yellow when differentiating w.r.t x).
+  - Use `Cross` or `StrikeThrough` animations for cancellations.
+- **De-bundled Reveals**: Do not show a complex equation all at once.
+  - Animate it term-by-term.
+  - Example: "First, we write the integral..." (Integral symbol appears) "...of the first term..." (First term appears) "...plus the second term." (Second term appears).
+
+SHOW YOUR WORK (BLACKBOARD STRATEGY):
+- Do NOT just `ReplacementTransform` equation A to equation B instantly.
+- If simplifying or distributing:
+  1. Show the intermediate step.
+  2. Use `Braces` to group terms that are combining.
+  3. Use `Arrows` to show movement (e.g. distribution).
+- **Avoid excessive clearing**: Treat the screen like a blackboard. Shift old steps UP or fade them to gray (`.set_opacity(0.5)`) rather than deleting them immediately. This helps the viewer track the logic.
+
 NARRATIVE-VISUAL SYNC (CRITICAL):
 - You MUST design the visual flow to match a granular narration script.
 - For every visual change (new equation, new term, graph shift), specify the exact phrase or "narrative trigger" that accompanies it.
@@ -78,6 +100,7 @@ If animation_goal is "exam prep / how-to-solve":
 ANIMATION PHILOSOPHY: Visuals exist to aid mathematical understanding, not for entertainment.
 
 ENCOURAGED (these help the viewer):
+- **Lists and Bullet Points**: Use these for properties or steps. Do not just speak them; show them.
 - Graphing a solution curve to show behavior (oscillating, decaying, growing)
 - A number line or simple 2D axes showing where roots land
 - Color-coding to track terms across algebraic steps
@@ -126,13 +149,15 @@ This will be used directly by a code generator, so be extremely specific about:
 
 SYNC-FOCUS RULES (CRITICAL):
 - Break the script into small "Visual-Narrative Blocks."
-- Example Block:
-  - Narration: "Consider the quadratic formula."
-  - Visual: Write the full equation by writing its VGroup components.
-  - Narration: "The term inside the square root is the discriminant."
-  - Visual: Indicate the specific VGroup component representing "b^2 - 4ac".
+- **ATOMIC GRANULARITY**: Do NOT allow a single narration block to cover multiple visual steps.
+  - BAD: "We rearrange terms and simplify." (One block)
+  - GOOD: "We rearrange the terms..." (Block 1: Visuals move) "...and simplify." (Block 2: Visuals combine)
+- **PACING**: If a narration line is long (e.g. 5+ seconds), the visual MUST NOT finish in 0.5 seconds.
+  - Instruct the VisualDesigner to use "holding" animations (e.g. `Indicate(..., run_time=2)` or `Circumscribe(...)`) to fill the time.
+  - Or, break the narration into smaller chunks.
 - NEVER have a long paragraph of text accompanied by multiple independent animations.
 - Every major animation step MUST have its own dedicated piece of narration.
+- **Explicit Connection**: When a result is derived, instruct the narrator to explicitly link it back to the original problem (e.g., "This result connects back to our original differential equation...").
 
 If animation_goal is "exam prep / how-to-solve":
 - Every example must be solved completely: setup -> every algebra step -> final answer
@@ -207,6 +232,10 @@ SYNC RULES:
    - "Equation Decomposition": If an equation needs partial highlighting, provide the exact breakdown of how the equation should be split into a VGroup of smaller MathTex objects.
    - "Highlight Target": Name the specific component from the decomposition to be highlighted (do NOT use character indices).
 
+HOLDING ANIMATIONS:
+- If a narration block is long (e.g. explaining a concept), do NOT just play a quick "Write" animation and then wait.
+- Explicitly instruct a "Holding Animation" to keep the screen alive (e.g., "Slowly indicate the term", "Pulse the diagram", "Pan camera slightly").
+
 Example Output:
 Block 1:
 - Narration: "We start with the general form of the heat equation."
@@ -214,7 +243,7 @@ Block 1:
 - Equation Decomposition: `lhs = MathTex(r"\\\\frac{\\\\partial u}{\\\\partial t}")`, `equals = MathTex("=")`, `rhs = MathTex(r"\\\\alpha \\\\nabla^2 u")`
 Block 2:
 - Narration: "Here, alpha represents the thermal diffusivity."
-- Visual: Indicate the alpha term.
+- Visual: Indicate the alpha term (run_time=2.0).
 - Highlight Target: The `MathTex(r"\\\\alpha")` sub-component of `rhs`.
 
 Be extremely pedantic about timing. Visuals must NEVER lag behind the speech.
