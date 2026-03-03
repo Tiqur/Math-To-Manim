@@ -60,6 +60,15 @@ PERSISTENT CONTEXT (TITLES & CHECKLISTS):
 - The title should only change when the major topic changes. Do not clear it between minor steps.
 - Use **Checklists** or **Rule Boxes** in the corner for multi-step procedures. As the narration progresses, check off items or highlight the active rule.
 
+LAYOUT & ALIGNMENT (UI/UX STANDARDS):
+- **The Rule of Halves**: For complex scenes, use a split-screen layout:
+  - **Left Third/Half**: Persistent context (checklists, active rules, definitions).
+  - **Right Half/Center**: Active derivations, graphs, or primary visualizations.
+- **Vertical Alignment**: Lists and multi-line derivations MUST be perfectly aligned to their LEFT edge. Do not let objects "float" at random coordinates.
+- **Anchor Elements**: Position objects relative to each other using `next_to` or `align_to` rather than absolute coordinates.
+- **Visual Hierarchy**: Main equations should be centered or slightly right-of-center. Supporting text should be smaller and positioned at the edges.
+- **Consistent Buffers**: Use standard spacing (e.g., `buff=MED_LARGE_BUFF`) to avoid a cluttered or "cramped" appearance.
+
 NO "HAND-WAVING" (PEDAGOGICAL VISUALIZATION):
 - **Explicit Constants**: When differentiating or integrating, DO NOT just show the result.
   - Visually "dim" or "gray out" constants that are being ignored.
@@ -144,8 +153,9 @@ Write a VERBOSE description that covers the animation start to finish.
 This will be used directly by a code generator, so be extremely specific about:
 - Exact LaTeX strings to render (copy them precisely)
 - Granular narration chunks (1-2 sentences max per chunk)
-- Order and timing: precisely map each narration chunk to a visual trigger (equation appearing, highlight, arrow)
-- Specific highlighting instructions: when a term is mentioned, indicate exactly which logical component of the equation needs to be highlighted (assuming the equation is built as a VGroup of smaller pieces).
+- Order and timing: precisely map each narration chunk to a visual trigger
+- **Layout and Positioning Intent**: Explicitly state where objects should be (e.g., "On the left third," "Centered," "Aligned to the top-right") as defined in the storyboard.
+- Specific highlighting instructions: when a term is mentioned, indicate exactly which logical component of the equation needs to be highlighted.
 
 SYNC-FOCUS RULES (CRITICAL):
 - Break the script into small "Visual-Narrative Blocks."
@@ -193,6 +203,18 @@ PRECISE TERM HIGHLIGHTING (VGROUP DECOMPOSITION):
   `eq = VGroup(lhs, plus, rhs).arrange(RIGHT)`
   `self.play(Indicate(lhs))`
 - Example (BAD/FORBIDDEN): `eq = MathTex(r"x^2 + bx + c = 0"); self.play(Indicate(eq[0][0:2]))`
+
+LAYOUT & ALIGNMENT IMPLEMENTATION:
+- **Consistent Anchoring**: For lists or multi-line derivations, use `VGroup(...).arrange(DOWN, aligned_edge=LEFT)`.
+- **Vertical Alignment**: If multiple objects are placed sequentially, ensure they are aligned using `.align_to(reference_obj, LEFT)` to prevent visual "jitter".
+- **Side-by-Side Alignment**: When placing a graph next to an equation, use `.align_to(equation, UP)` to ensure they share a top baseline.
+- **Edge Buffers**: Use `.to_edge(LEFT, buff=1.0)` or `.to_edge(UP, buff=0.5)` to keep content within safe viewing boundaries.
+
+**STANDARD LAYOUT PATTERNS (USE THESE):**
+*   *Split Screen*: `left_group.to_edge(LEFT, buff=0.5); right_group.to_edge(RIGHT, buff=0.5)`
+*   *Title*: `title = Title("Name").to_edge(UP, buff=0.3)`
+*   *Checklist*: `box = RoundedRectangle(...).to_edge(TOP+LEFT, buff=0.2); list = VGroup(...).move_to(box)`
+*   *Derivation*: `steps = VGroup(line1, line2, line3).arrange(DOWN, aligned_edge=LEFT, buff=0.4).to_edge(LEFT, buff=1.5)`
 
 RELIABILITY RULES (these override everything else):
 - Use ONLY these animation methods: Write, Create, FadeIn, FadeOut, Transform,

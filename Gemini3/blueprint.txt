@@ -1,163 +1,149 @@
-### Scene 1: Lecture Overview & Roadmap
+### Visual-Narrative Script: The Pythagorean Theorem
 
-**Visual-Narrative Block 1**
-*   **Visual**: Render `Title("Exact Differential Equations: Overview").to_edge(UP)`. Below it, center a box containing the LaTeX: `M(x,y)dx + N(x,y)dy = 0`.
-*   **Narration**: "To solve a first-order differential equation using exactness, we first look for this standard form."
-*   **Action**: `Write` the title and `Create` the box around the standard form equation.
-
-**Visual-Narrative Block 2**
-*   **Visual**: On the left side of the screen, a list appears: 
-    1. `Partial Derivative (\partial)`
-    2. `Exactness (M_y = N_x)`
-    3. `Potential Function (\Psi)`
-    4. `Integrating Factor (\mu)`
-*   **Narration**: "Before we dive into the math, you need to be comfortable with partial derivatives and the concept of a total differential."
-*   **Action**: `FadeIn` the vocabulary list one item at a time. Use `Indicate` on the `\partial` symbol during the narration.
-
-**Visual-Narrative Block 3**
-*   **Visual**: On the right side, the Roadmap Flowchart appears: `[Start] \rightarrow [Identify M & N] \rightarrow [Test M_y = N_x]`.
-*   **Narration**: "Our strategy is a three-step process: identify, test, and reconstruct."
-*   **Action**: `Write` the first two steps of the flowchart.
-
-**Visual-Narrative Block 4**
-*   **Visual**: Add the branching paths to the flowchart: `\xrightarrow{Yes} [Algorithm for \Psi]` and `\xrightarrow{No} [Find \mu]`.
-*   **Narration**: "Depending on the test result, we either proceed to build the potential function or find an integrating factor."
-*   **Action**: `Write` the two arrows and the final two boxes of the flowchart.
+**Global Style Settings:**
+- **Background**: `#0F172A` (Deep Midnight Blue)
+- **Primary Text**: `#F8FAFC` (Off-white)
+- **Color A**: `#38BDF8` (Sky Blue)
+- **Color B**: `#10B981` (Emerald Green)
+- **Color C**: `#F59E0B` (Amber)
+- **Markers**: `#94A3B8` (Slate Gray)
+- **Alert**: `#EF4444` (Soft Red)
 
 ---
 
-### Scene 2: The Exactness Test
+### Scene 1: Concept Roadmap
+**Layout**: Title at top. Checklist on the left third. Right triangle on the right third. Equation centered at the bottom.
 
-**Visual-Narrative Block 5**
-*   **Visual**: `Title("Step 1: The Exactness Test").to_edge(UP)`. In the top right corner, a Rule Box with three unchecked boxes: `[ ] Identify M(x,y)`, `[ ] Identify N(x,y)`, `[ ] Calculate M_y and N_x`.
-*   **Narration**: "Let's start our first example by following our checklist."
-*   **Action**: `Write` title and `FadeIn` the Rule Box.
+- **Visual-Narrative Block 1**
+  - **Visual**: Write Title: `\text{The Pythagorean Theorem}`.to_edge(UP). Draw a right triangle on the right side with vertices $A, B, C$ and a small Slate Gray square at the right angle.
+  - **Narration**: "The Pythagorean Theorem is the foundation of geometry, relating the sides of a right triangle."
 
-**Visual-Narrative Block 6**
-*   **Visual**: Center the example equation: `(3x^2 + 4xy)dx + (2x^2 + 2y)dy = 0`.
-*   **Narration**: "Let's look at this equation. Our M is the term attached to dx, and N is attached to dy."
-*   **Action**: `Write` the equation. Then, apply Sky Blue (`#38BDF8`) to `3x^2 + 4xy` and Mint Green (`#4ADE80`) to `2x^2 + 2y`. Put a checkmark in the first two boxes of the Rule Box.
+- **Visual-Narrative Block 2**
+  - **Visual**: Create "Mastery Path" checklist on the left. Item 1: "Identify the Right Angle" is highlighted in White. Items 2-4 are dimmed.
+  - **Narration**: "To master it, we follow four steps: Identifying the angle, mapping sides, understanding area, and final calculation."
 
-**Visual-Narrative Block 7**
-*   **Visual**: Below the equation, write the formula: `M_y = N_x`.
-*   **Narration**: "The condition for exactness is that the partial of M with respect to y must equal the partial of N with respect to x."
-*   **Action**: `Write` the formula and `Indicate` it with a brief pulse.
-
-**Visual-Narrative Block 8**
-*   **Visual**: Show the calculation: `\frac{\partial M}{\partial y} = \frac{\partial}{\partial y}(3x^2 + 4xy)`.
-*   **Narration**: "Differentiating M with respect to y, we treat x as a constant."
-*   **Action**: `Write` the derivative setup.
-
-**Visual-Narrative Block 9**
-*   **Visual**: The term `3x^2` within the derivative becomes semi-transparent (dimmed). The `y` in `4xy` is highlighted in Yellow (`#FDE047`).
-*   **Narration**: "The 3x-squared term vanishes because it doesn't contain y."
-*   **Action**: Set opacity of `3x^2` to 0.3. Use `Circumscribe` on the `y` in `4xy`.
-
-**Visual-Narrative Block 10**
-*   **Visual**: The result `4x` appears. Then show the second calculation: `\frac{\partial N}{\partial x} = \frac{\partial}{\partial x}(2x^2 + 2y) = 4x`.
-*   **Narration**: "Differentiating N with respect to x yields the same result: 4x."
-*   **Action**: `Write` the result for $M_y$, then `Write` the full line for $N_x$ in one motion.
-
-**Visual-Narrative Block 11**
-*   **Visual**: Center the equality `4x = 4x` and place a large green checkmark over it. Mark the final box in the Rule Box.
-*   **Narration**: "Both result in 4x, so the equation is exact."
-*   **Action**: `Transform` the two results into the equality. `FadeIn` the checkmark.
+- **Visual-Narrative Block 3**
+  - **Visual**: Render the central equation at the bottom: `a^2 + b^2 = c^2`.
+  - **Narration**: "This simple relationship allows us to solve for missing lengths in any right-angled space."
 
 ---
 
-### Scene 3: Potential Function Algorithm
+### Scene 2: Step 1 – The Right Angle
+**Layout**: Split-screen. Definition Box on the left. Vector diagram on the right.
 
-**Visual-Narrative Block 12**
-*   **Visual**: `Title("Step 2: Finding the Potential Function").to_edge(UP)`. Checklist in top right: `[x] M_y = N_x`, `[ ] Integrate M w.r.t x`, `[ ] Solve for g(y)`.
-*   **Narration**: "Because it's exact, there exists a potential function Psi. We find it by integrating M with respect to x."
-*   **Action**: `FadeIn` the setup: `\Psi(x,y) = \int M \, dx + g(y)`.
+- **Visual-Narrative Block 4**
+  - **Visual**: Title changes to `\text{Step 1: The Right Angle}`. Show two vectors $\vec{u}$ (Sky Blue) and $\vec{v}$ (Emerald Green) meeting at an origin at a $45^\circ$ angle.
+  - **Narration**: "First, the theorem only applies to right triangles."
 
-**Visual-Narrative Block 13**
-*   **Visual**: Substitute M: `\Psi(x,y) = \int (3x^2 + 4xy) dx + g(y)`.
-*   **Narration**: "We plug our expression for M into the integral."
-*   **Action**: `TransformMatchingTex` from the general setup to the specific integral.
+- **Visual-Narrative Block 5**
+  - **Visual**: Rotate vector $\vec{v}$ until it is perpendicular to $\vec{u}$ ($90^\circ$). Place a Slate Gray square marker at the intersection.
+  - **Narration**: "This means two sides must be orthogonal, forming a 90-degree angle."
 
-**Visual-Narrative Block 14**
-*   **Visual**: Show the result of integration: `\Psi(x,y) = x^3 + 2x^2y + g(y)`.
-*   **Narration**: "Integrating term-by-term, we get x-cubed plus 2-x-squared-y."
-*   **Action**: `Write` the result. Use `Indicate` on `x^3` then `2x^2y`.
+- **Visual-Narrative Block 6**
+  - **Visual**: In the Definition Box on the left, render: `\text{Orthogonality: } \theta = 90^\circ` and `\vec{u} \cdot \vec{v} = 0`. 
+  - **Narration**: "Mathematically, their dot product equals zero."
 
-**Visual-Narrative Block 15**
-*   **Visual**: The term `g(y)` is highlighted in Yellow (`#FDE047`). Check the second box in the checklist.
-*   **Narration**: "Don't forget the constant of integration—since we integrated with respect to x, this constant is a function of y, which we call g of y."
-*   **Action**: `Circumscribe` the `g(y)` term and hold for 2 seconds.
-
-**Visual-Narrative Block 16**
-*   **Visual**: Write: `\frac{\partial \Psi}{\partial y} = N`.
-*   **Narration**: "To find g of y, we differentiate our new Psi with respect to y and set it equal to N."
-*   **Action**: `Write` the formula below the intermediate result.
-
-**Visual-Narrative Block 17**
-*   **Visual**: Expand the differentiation: `\frac{\partial}{\partial y}(x^3 + 2x^2y + g(y)) = 2x^2 + 2y`.
-*   **Narration**: "Substituting our expression for Psi on the left and our original N on the right."
-*   **Action**: `Write` the equation.
-
-**Visual-Narrative Block 18**
-*   **Visual**: Apply `Cross` to the `2x^2` on the left side and the `2x^2` on the right side.
-*   **Narration**: "Terms involving x should cancel out here. If they don't, check your previous derivative!"
-*   **Action**: `Create` two red crosses over the identical terms.
-
-**Visual-Narrative Block 19**
-*   **Visual**: Show the simplified equation: `g'(y) = 2y`. Then `g(y) = y^2`. Check the final box in the checklist.
-*   **Narration**: "This leaves us with g-prime of y equals 2y, which integrates easily to y-squared."
-*   **Action**: `TransformMatchingTex` to the simplified form, then `Write` the result for $g(y)$.
+- **Visual-Narrative Block 7**
+  - **Visual**: On the checklist, Step 1 gets a green checkmark. Step 2 "Map the Sides" is highlighted.
+  - **Narration**: "With the right angle confirmed, we can now name the components of the triangle."
 
 ---
 
-### Scene 4: Non-Exact Case (Integrating Factors)
+### Scene 3: Step 2 – Hypotenuse vs. Legs
+**Layout**: Large triangle centered. 
 
-**Visual-Narrative Block 20**
-*   **Visual**: `Title("When Exactness Fails").to_edge(UP)`. New equation: `y \, dx + (2x - ye^y) \, dy = 0`.
-*   **Narration**: "What if M-sub-y doesn't equal N-sub-x? Let's check this new equation."
-*   **Action**: `Write` the equation.
+- **Visual-Narrative Block 8**
+  - **Visual**: Show the triangle. Color the bottom side (leg $a$) Sky Blue and the vertical side (leg $b$) Emerald Green. Labels `a` and `b` appear.
+  - **Narration**: "Next, we map the sides. The two sides forming the L-shape are the legs."
 
-**Visual-Narrative Block 21**
-*   **Visual**: Show: `M_y = 1` and `N_x = 2`. Below them, `1 \neq 2`.
-*   **Narration**: "Here, the partial of M with respect to y is 1, but the partial of N with respect to x is 2. 1 does not equal 2."
-*   **Action**: `Write` the derivatives. `FadeIn` a red 'X' over the inequality.
+- **Visual-Narrative Block 9**
+  - **Visual**: Draw an Amber arrow starting from the Slate Gray right-angle marker, pointing across the triangle to the longest side.
+  - **Narration**: "Directly across from the right angle is the Hypotenuse."
 
-**Visual-Narrative Block 22**
-*   **Visual**: Display a formula box:
-    1. `\mu(x) = e^{\int \frac{M_y - N_x}{N} dx}`
-    2. `\mu(y) = e^{\int \frac{N_x - M_y}{M} dy}`
-*   **Narration**: "We need an integrating factor, mu, to force exactness."
-*   **Action**: `FadeIn` the formula box.
-
-**Visual-Narrative Block 23**
-*   **Visual**: Perform calculation: `\frac{N_x - M_y}{M} = \frac{2 - 1}{y} = \frac{1}{y}`.
-*   **Narration**: "We test the residuals. In this case, the second formula gives us 1 over y, which depends only on y."
-*   **Action**: `Write` the calculation. Highlight the result `1/y` in Yellow (`#FDE047`).
-
-**Visual-Narrative Block 24**
-*   **Visual**: Calculate $\mu$: `\mu(y) = e^{\int \frac{1}{y} dy} = e^{\ln y} = y`.
-*   **Narration**: "This gives us an integrating factor of y."
-*   **Action**: `Write` the steps for $\mu(y)$. `Indicate` the final result `y`.
+- **Visual-Narrative Block 10**
+  - **Visual**: Label the diagonal side `c` in Amber. Apply a glow effect to side `c` (`Indicate` or `Circumscribe`). Render the text `c > a, b` near the side.
+  - **Narration**: "This is always the longest side of the triangle."
 
 ---
 
-### Scene 5: IVP Finalization
+### Scene 4: Step 3 – Area Logic
+**Layout**: Centered triangle with geometric expansions.
 
-**Visual-Narrative Block 25**
-*   **Visual**: `Title("Initial Value Problems (IVP)").to_edge(UP)`. Write: `x^3 + 2x^2y + y^2 = C`.
-*   **Narration**: "Finally, if you're given an initial condition, like y of 1 equals 2, we solve for the constant C."
-*   **Action**: `FadeIn` the general solution and the condition `y(1) = 2`.
+- **Visual-Narrative Block 11**
+  - **Visual**: From Leg $a$, grow a square of side $a$ with Sky Blue fill (opacity 0.4). From Leg $b$, grow a square of side $b$ with Emerald Green fill (opacity 0.4).
+  - **Narration**: "The theorem states that if we treat each side as the edge of a square..."
 
-**Visual-Narrative Block 26**
-*   **Visual**: Show substitution: `(1)^3 + 2(1)^2(2) + (2)^2 = C`.
-*   **Narration**: "Substitute 1 for every x and 2 for every y."
-*   **Action**: `TransformMatchingTex` the general solution into the substituted version. Highlight `1` in Yellow and `2` in Mint Green.
+- **Visual-Narrative Block 12**
+  - **Visual**: Pulse the Sky Blue and Emerald Green squares simultaneously. Render `\text{Area}_a + \text{Area}_b` at the bottom.
+  - **Narration**: "...the combined area of the two smaller squares..."
 
-**Visual-Narrative Block 27**
-*   **Visual**: `1 + 4 + 4 = C \Rightarrow C = 9`.
-*   **Narration**: "Calculating the left side gives us 9, so C equals 9."
-*   **Action**: `Write` the arithmetic and the result for `C`.
+- **Visual-Narrative Block 13**
+  - **Visual**: From the Hypotenuse $c$, grow a square of side $c$ with Amber fill (opacity 0.4). Complete the equation: `\text{Area}_a + \text{Area}_b = \text{Area}_c`.
+  - **Narration**: "...perfectly equals the area of the square on the hypotenuse."
 
-**Visual-Narrative Block 28**
-*   **Visual**: Display: `x^3 + 2x^2y + y^2 = 9`.
-*   **Narration**: "The final solution is the implicit equation set to that specific constant. This result connects back to our original differential equation by satisfying all conditions."
-*   **Action**: `TransformMatchingTex` back to the variable form but replace `C` with `9`. `Surround` the equation with a thick Gold (`#FDE047`) box.
+---
+
+### Scene 5: Step 4 – Calculating Lengths
+**Layout**: Checklist on the left (Step 4 active). Numerical derivation on the right.
+
+- **Visual-Narrative Block 14**
+  - **Visual**: Render the initial equation: `3^2 + 4^2 = c^2`. 
+  - **Narration**: "Let's solve for $c$ using a 3-4-5 triangle."
+
+- **Visual-Narrative Block 15**
+  - **Visual**: Transform `3^2` into `9` and `4^2` into `16`. Result: `9 + 16 = c^2`.
+  - **Narration**: "First, square the legs. Three squared is nine, and four squared is sixteen."
+
+- **Visual-Narrative Block 16**
+  - **Visual**: Transform `9 + 16` into `25`. Result: `25 = c^2`.
+  - **Narration**: "Summing these gives us twenty-five."
+
+- **Visual-Narrative Block 17**
+  - **Visual**: Surround the equation with a square root symbol: `\sqrt{25} = \sqrt{c^2}`. Transform to `\sqrt{25} = c`.
+  - **Narration**: "Finally, to find the side length $c$, we take the square root of both sides."
+
+- **Visual-Narrative Block 18**
+  - **Visual**: Transform `\sqrt{25}` into `5`. Draw an Amber box around `5 = c`.
+  - **Narration**: "Resulting in a hypotenuse of five."
+
+---
+
+### Scene 6: Generalization (Law of Cosines)
+**Layout**: Centered triangle and algebraic text.
+
+- **Visual-Narrative Block 19**
+  - **Visual**: Transform the right triangle into an obtuse triangle (angle $> 90^\circ$). Render: `c^2 = a^2 + b^2 - 2ab \cos(\theta)`.
+  - **Narration**: "What if the angle isn't 90 degrees? We use the Law of Cosines."
+
+- **Visual-Narrative Block 20**
+  - **Visual**: Highlight the term `- 2ab \cos(\theta)` in Soft Red.
+  - **Narration**: "Notice this extra term here."
+
+- **Visual-Narrative Block 21**
+  - **Visual**: Transform the triangle back to $90^\circ$. Change the color of `\cos(\theta)` to Slate Gray and use a `Cross` animation to strike it out. Render `\cos(90^\circ) = 0` nearby.
+  - **Narration**: "When the angle is exactly 90 degrees, the cosine becomes zero..."
+
+- **Visual-Narrative Block 22**
+  - **Visual**: Fade out the struck-out term. Only `a^2 + b^2 = c^2` remains.
+  - **Narration**: "...and we return to the familiar Pythagorean Theorem."
+
+---
+
+### Scene 7: Final Overview
+**Layout**: 2x2 Grid summary.
+
+- **Visual-Narrative Block 23**
+  - **Visual**: Display 2x2 grid. 
+    1. Top-Left: Triangle with 3 colored squares.
+    2. Top-Right: `a^2 + b^2 = c^2`.
+    3. Bottom-Left: Amber text `c = \text{Hypotenuse}`.
+    4. Bottom-Right: Text `\text{Distance / Geometry}`.
+  - **Narration**: "Whether you are calculating distances in a coordinate plane or building a house..."
+
+- **Visual-Narrative Block 24**
+  - **Visual**: Grid elements fade out. The formula `a^2 + b^2 = c^2` scales up to fill the center of the screen.
+  - **Narration**: "...this relationship between sides remains one of the most powerful tools in mathematics."
+
+- **Visual-Narrative Block 25**
+  - **Visual**: Surround the final formula with an Amber rectangle and pulse it once.
+  - **Narration**: "Remember: $a^2$ plus $b^2$ always equals $c^2$ for a right triangle."

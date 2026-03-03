@@ -1579,6 +1579,28 @@ def run_vision_review(client, current_code, latest_vid, output_log, model, bluep
 You are a strict RENDERING QA reviewer for Manim animations.
 {VISION_CONTENT_BAN}
 
+━━━ SEVERITY DEFINITIONS & COMMON PROBLEMS ━━━
+- [CRITICAL]: Game-breaking or fundamental rendering failures.
+  * Scene/Text Rotation: The entire scene or all text is rotated 90/180/270 degrees.
+  * Unreadable Overlap: Text/shapes are stacked so densely they cannot be read at all.
+  * Black/Flashing Screen: The render is empty, black, or has extreme visual artifacts.
+  * Missing Core Elements: Objects defined in the blueprint that are essential for the math are simply not there.
+- [MAJOR]: Significant visual bugs that distract or confuse.
+  * Geometry Errors: Shapes are rendered wrong (e.g., a jagged "circle", broken lines).
+  * Clear Overlaps: Text is overlapping shapes or other text in a way that is clearly unintended.
+  * Misalignment: Objects are significantly offset from where they should be (e.g., label far from its target).
+  * Clipping: Important elements are partially cut off by the screen edges.
+- [MODERATE]: Noticeable aesthetic issues that don't destroy legibility.
+  * Spacing/Margins: Inconsistent gaps between objects or uneven margins.
+  * Alignment: Objects are slightly off-center or not perfectly aligned with neighbors.
+  * Label Precision: Arrows or lines don't point exactly to the intended spot on a Mobject.
+  * Font Inconsistency: Sudden jumps in text size or weight that weren't requested.
+  * Minor Overlaps: Elements touch or slightly overlap but remain readable.
+- [MINOR]: Tiny aesthetic imperfections.
+  * Barely Touching: Two objects have a 1-pixel overlap or are just touching.
+  * Sub-pixel Jitter: Tiny alignment issues barely visible to the naked eye.
+  * Contrast: Color choices are slightly sub-optimal for high-speed viewing.
+
 ━━━ DEVELOPER BLUEPRINT ━━━
 {blueprint}
 
@@ -1586,25 +1608,24 @@ You are a strict RENDERING QA reviewer for Manim animations.
 {chr(10).join(frame_annotation_lines)}
 
 ━━━ WHAT TO CHECK ━━━
-For each frame:
-1. Does layout match the BLUEPRINT?
-2. Unexpected overlaps?
-3. Objects outside safe boundary (< 0.3 units from edge)?
-4. Font clipping?
-5. Z-ordering hiding visible elements?
+For each frame, evaluate against the BLUEPRINT and the following UI/UX STANDARDS:
+1. **The Rule of Halves**: For complex scenes, is the screen split (Left=Context, Right/Center=Active)?
+2. **Vertical Alignment**: Are lists and derivations perfectly aligned to their LEFT edge?
+3. **Hierarchy**: Is the main content (equations/graphs) prominent and centered/right-center?
+4. **Safety Boundaries**: Are objects at least 0.5 units away from all screen edges?
+5. **Legibility**: No overlapping text, no font clipping, and high contrast.
 
 ━━━ RESPONSE FORMAT ━━━
 All good → reply PERFECT (just that word).
 
 Otherwise, provide an ISSUE LIST:
-- [CRITICAL] Description of bug...
-- [MINOR] Description of bug...
+- [LEVEL] Description of bug...
+- [LEVEL] Description of bug...
 
-Then, state the overall SEVERITY:
-SEVERITY: CRITICAL or MINOR
-(If *any* issue is [CRITICAL], the overall severity must be CRITICAL.)
+Then, state the overall SEVERITY (the highest level of any issue found):
+SEVERITY: MINOR, MODERATE, MAJOR, or CRITICAL
 
-If CRITICAL, include a SEARCH/REPLACE patch to fix it:
+For ANY issue you report, you MUST include a SEARCH/REPLACE patch to fix it:
 ```
 <<<SEARCH
 [exact lines verbatim]
@@ -1642,15 +1663,14 @@ Current Code:
     if response_text.upper().startswith("PERFECT"):
         return True, "Vision: no issues.", None, "PERFECT", frame_paths, frame_timestamps, anim_map
 
-    sev_match = re.search(r"SEVERITY\s*:\s*(CRITICAL|MINOR)", response_text, re.IGNORECASE)
+    sev_match = re.search(r"SEVERITY\s*:\s*(CRITICAL|MAJOR|MODERATE|MINOR)", response_text, re.IGNORECASE)
     severity  = sev_match.group(1).upper() if sev_match else "CRITICAL"
 
     patch = None
-    if severity == "CRITICAL":
-        m = re.search(r"```[^\n]*\n(.*?)```", response_text, re.DOTALL)
-        raw = m.group(1) if m else response_text
-        if "<<<SEARCH" in raw:
-            patch = raw
+    m = re.search(r"```[^\n]*\n(.*?)```", response_text, re.DOTALL)
+    raw = m.group(1) if m else response_text
+    if "<<<SEARCH" in raw:
+        patch = raw
 
     report = re.sub(r"```.*?```", "", response_text, flags=re.DOTALL).strip()
     return False, report, patch, severity, frame_paths, frame_timestamps, anim_map
@@ -1793,6 +1813,15 @@ def main():
     parser.add_argument("--vision-model",       type=str, default=None)
     parser.add_argument("--max-retries",        type=int, default=128)
     parser.add_argument("--max-vision-retries", type=int, default=128)
+    parser.add_argument("--vision-threshold",   type=int, default=1, choices=[0, 1, 2, 3, 4],
+                        help=(
+                            "Acceptance threshold for visual issues (hits). Issues at or below this level are ignored.\n"
+                            "0: Accept NOTHING (fix everything including tiny aesthetic flaws).\n"
+                            "1: Accept MINOR (tiny overlaps, sub-pixel jitter, sub-optimal contrast).\n"
+                            "2: Accept MODERATE (spacing inconsistency, imprecise labels, font size jumps).\n"
+                            "3: Accept MAJOR (geometry errors, significant overlaps, misalignment, clipping).\n"
+                            "4: Accept CRITICAL (whole scene rotated, unreadable overlap, missing core objects)."
+                        ))
     parser.add_argument("--rewrite-threshold",  type=int, default=8)
     parser.add_argument("--verbose",             action="store_true",
                         help="Show full agent output, Manim stdout, and debug prints")
@@ -2171,9 +2200,14 @@ NOTE: gemini_tts_service.py is in the same directory.
                     print_vision_report(report, frame_paths, frame_timestamps, anim_map)
                     vision_attempts += 1
 
-                    if severity == "MINOR":
+                    # Severity check logic
+                    SEV_MAP = {"MINOR": 1, "MODERATE": 2, "MAJOR": 3, "CRITICAL": 4}
+                    current_sev_val = SEV_MAP.get(severity, 4)
+                    
+                    if current_sev_val <= args.vision_threshold:
                         console.print(Panel(
-                            "[yellow]Vision: MINOR only — accepting.[/yellow]", border_style="yellow"
+                            f"[yellow]Vision: severity {severity} is within threshold {args.vision_threshold} — accepting.[/yellow]",
+                            border_style="yellow"
                         ))
                         console.print(f"\n[bold green]Final video:[/bold green] {file_link(latest_vid)}")
                         break
