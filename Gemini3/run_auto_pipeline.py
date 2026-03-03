@@ -1822,6 +1822,7 @@ def main():
                             "3: Accept MAJOR (geometry errors, significant overlaps, misalignment, clipping).\n"
                             "4: Accept CRITICAL (whole scene rotated, unreadable overlap, missing core objects)."
                         ))
+    parser.add_argument("--notes",              type=str, nargs="+", help="Path(s) to lecture notes/lesson files to use as context.")
     parser.add_argument("--rewrite-threshold",  type=int, default=8)
     parser.add_argument("--verbose",             action="store_true",
                         help="Show full agent output, Manim stdout, and debug prints")
@@ -1901,7 +1902,22 @@ CRITICAL AUDIO SYNC AND HIGHLIGHTING:
             if os.path.exists("curriculum_prompt.txt")
             else "Explain the Pythagorean Theorem visually"
         )
-        full_prompt = raw_prompt + (f"\n\n{audio_instructions}" if use_audio else "")
+        
+        notes_context = ""
+        if args.notes:
+            for note_path in args.notes:
+                try:
+                    with open(note_path, "r", encoding="utf-8") as f:
+                        notes_context += f"\n--- REFERENCE NOTES ({os.path.basename(note_path)}) ---\n"
+                        notes_context += f.read() + "\n"
+                except Exception as e:
+                    console.print(f"[bold red]Error reading notes file {note_path}: {e}[/bold red]")
+
+        full_prompt = (
+            (f"USE THE FOLLOWING NOTES AS PRIMARY REFERENCE MATERIAL:\n{notes_context}\n\n" if notes_context else "") +
+            raw_prompt + 
+            (f"\n\n{audio_instructions}" if use_audio else "")
+        )
 
         try:
             console.print("[bold blue]Running initial pipeline swarm…[/bold blue]")
