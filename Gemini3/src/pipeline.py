@@ -15,6 +15,7 @@ from .agents import (
     create_mathematical_enricher,
     create_visual_designer,
     create_narrative_composer,
+    create_sync_orchestrator,
     create_code_generator
 )
 
@@ -65,6 +66,7 @@ class Gemini3Pipeline:
         self.math_enricher = create_mathematical_enricher()
         self.visual_designer = create_visual_designer()
         self.narrative_composer = create_narrative_composer()
+        self.sync_orchestrator = create_sync_orchestrator()
         self.code_generator = create_code_generator()
         logger.console.print("[bold green]Pipeline Initialized.[/bold green]")
 
@@ -96,12 +98,23 @@ class Gemini3Pipeline:
 
         # 5. Narrative Composition
         logger.log_agent_start("NarrativeComposer", "Composing verbose prompt...")
-        verbose_prompt = run_agent_sync(self.narrative_composer, f"Write a verbose animation prompt based on this storyboard: {storyboard}")
+        verbose_prompt = run_agent_sync(self.narrative_composer, f"Write a verbose animation script based on this storyboard: {storyboard}")
         logger.log_agent_completion("NarrativeComposer", str(verbose_prompt))
 
-        # 6. Code Generation
+        # 6. Sync Orchestration (NEW)
+        logger.log_agent_start("SyncOrchestrator", "Aligning narration with visual actions...")
+        sync_manifest = run_agent_sync(
+            self.sync_orchestrator,
+            f"Orchestrate this script and storyboard into a sync manifest: {verbose_prompt} {storyboard}"
+        )
+        logger.log_agent_completion("SyncOrchestrator", str(sync_manifest))
+
+        # 7. Code Generation
         logger.log_agent_start("CodeGenerator", "Generating Manim code...")
-        code_result = run_agent_sync(self.code_generator, f"Generate the Manim code for this description: {verbose_prompt}")
+        code_result = run_agent_sync(
+            self.code_generator,
+            f"Generate the Manim code based on this sync manifest: {sync_manifest}"
+        )
         logger.log_agent_completion("CodeGenerator", str(code_result))
 
         logger.console.rule("[bold red]Pipeline End[/bold red]")

@@ -1,222 +1,322 @@
 from manim import *
 from manim_voiceover import VoiceoverScene
-from gemini_tts_service import GeminiTTSService
+from manim_voiceover.services.gtts import GTTSService
 
-# Global Style Settings
+# Global Configuration
 config.background_color = "#0F172A"
-PRIMARY_COLOR = "#F8FAFC"
-HIGHLIGHT_PARTICULAR = "#FACC15"  # Yellow
-HIGHLIGHT_HOMOGENEOUS = "#60A5FA" # Blue
-HIGHLIGHT_DISCONTINUITY = "#F87171" # Red
+TEXT_COLOR = "#F8FAFC"
+PX_COLOR = "#FDE047"
+GX_COLOR = "#22D3EE"
+MU_COLOR = "#FB923C"
+SUCCESS_COLOR = "#4ADE80"
+AXES_COLOR = "#94A3B8"
 
 class MyScene(VoiceoverScene):
     def construct(self):
-        self.set_speech_service(GeminiTTSService(
-            model="gemini-2.5-flash-preview-tts",
-            voice="Kore",
-            style_context="You are narrating an educational math animation. Adapt your tone and pacing to match this description: This verbose anim",
-        ))
+        self.set_speech_service(GTTSService(lang="en"))
 
-        # --- Scene 1: Lecture Overview ---
-        with self.voiceover(text="In this lecture, we will explore solving second order linear differential equations with piecewise forcing functions.") as tracker:
-            title = MathTex(r"\text{Solving 2nd Order Linear ODEs}", color=PRIMARY_COLOR).to_edge(UP)
-            eq_box = MathTex(r"a y'' + b y' + c y = g(t)", color=PRIMARY_COLOR).scale(1.2).shift(UP * 0.5)
+        # --- Scene 1: Lecture Overview & Roadmap ---
+        
+        # Block 1
+        with self.voiceover(text="Today we solve first-order linear differential equations using the Integrating Factor method.") as tracker:
+            title = Text("Integrating Factor Method", color=TEXT_COLOR).to_edge(UP)
+            
+            term1 = MathTex(r"a_1(x)y'", color=TEXT_COLOR)
+            plus = MathTex("+", color=TEXT_COLOR)
+            term2 = MathTex(r"a_0(x)y", color=TEXT_COLOR)
+            equals = MathTex("=", color=TEXT_COLOR)
+            rhs = MathTex(r"f(x)", color=TEXT_COLOR)
+            gen_eq = VGroup(term1, plus, term2, equals, rhs).arrange(RIGHT).next_to(title, DOWN, buff=0.5)
+            
             self.play(FadeIn(title))
-            eq_rect = SurroundingRectangle(eq_box, color=PRIMARY_COLOR)
-            self.play(FadeIn(eq_rect), FadeIn(eq_box))
+            self.play(FadeIn(gen_eq))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
 
-        with self.voiceover(text="Note the difference between homogeneous and non-homogeneous cases, and how step functions require C1 continuity.") as tracker:
-            sidebar = VGroup(
-                MathTex(r"\text{Homogeneous: } g(t) = 0", font_size=30),
-                MathTex(r"\text{Non-Homogeneous: } g(t) \neq 0", font_size=30),
-                MathTex(r"\text{Step Function: } u(t-c)", font_size=30),
-                MathTex(r"C^1 \text{ Continuity: } y, y' \text{ smooth}", font_size=30)
-            ).arrange(DOWN, aligned_edge=LEFT).to_edge(LEFT).shift(DOWN * 1)
-            self.play(FadeIn(sidebar))
+        # Block 2
+        with self.voiceover(text="Before we calculate anything, we need a roadmap.") as tracker:
+            vocab_box = Rectangle(width=4.5, height=3, color=AXES_COLOR).to_edge(LEFT, buff=0.5).shift(DOWN*1)
+            vocab_title = Text("Vocabulary", font_size=24, color=AXES_COLOR).next_to(vocab_box, UP, buff=0.1)
+            
+            v1 = Text("Linear", font_size=24, color=TEXT_COLOR)
+            v2 = Text("Standard Form", font_size=24, color=TEXT_COLOR)
+            v3 = Text("Integrating Factor", font_size=24, color=TEXT_COLOR)
+            v4 = Text("Interval of Validity", font_size=24, color=TEXT_COLOR)
+            vocab_list = VGroup(v1, v2, v3, v4).arrange(DOWN, aligned_edge=LEFT, buff=0.3).move_to(vocab_box.get_center())
+            
+            self.play(FadeIn(vocab_box), FadeIn(vocab_title))
+            self.play(FadeIn(vocab_list))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
 
-        with self.voiceover(text="We follow a systematic flowchart: identify the forcing function, solve for the homogeneous solution, find the particular solution, and finally stitch the solutions at the jumps.") as tracker:
-            box1 = MathTex(r"\text{Identify } g(t)", font_size=28)
-            box2 = MathTex(r"\text{Solve Homogeneous } y_h", font_size=28)
-            box3 = MathTex(r"\text{Find Particular } y_p", font_size=28)
-            box4 = MathTex(r"\text{Stitch at Jumps}", font_size=28, color=HIGHLIGHT_DISCONTINUITY)
+        # Block 3
+        with self.voiceover(text="Our process follows five strict steps.") as tracker:
+            steps_text = [
+                r"1. \ y' + p(x)y = g(x)",
+                "2. Check Continuity",
+                r"3. \ \mu(x) = e^{\int p(x)dx}",
+                r"4. \ \frac{d}{dx}[\mu y] = \mu g",
+                "5. Select Interval"
+            ]
+            flowchart = VGroup()
+            for i, text in enumerate(steps_text):
+                content = MathTex(text, font_size=24) if "\\" in text or "y'" in text else Text(text, font_size=18)
+                box = SurroundingRectangle(content, buff=0.2, color=AXES_COLOR)
+                step_box = VGroup(box, content)
+                flowchart.add(step_box)
             
-            flowchart = VGroup(box1, box2, box3, box4).arrange(DOWN, buff=0.6).to_edge(RIGHT).shift(DOWN * 1)
-            arrows = VGroup(*[Arrow(flowchart[i].get_bottom(), flowchart[i+1].get_top(), buff=0.1) for i in range(len(flowchart)-1)])
+            flowchart.arrange(DOWN, buff=0.3).to_edge(RIGHT, buff=0.5).shift(DOWN*0.5)
+            flowchart[2][1].set_color(MU_COLOR)
             
-            self.play(LaggedStart(FadeIn(flowchart), FadeIn(arrows), lag_ratio=0.5))
-            self.play(Indicate(box4))
+            self.play(LaggedStart(*[FadeIn(s) for s in flowchart], lag_ratio=0.5))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 4
+        with self.voiceover(text="This method works as long as the functions are continuous near our starting point.") as tracker:
+            self.play(Indicate(v4, color=SUCCESS_COLOR))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # --- Scene 2: Standard Form & Continuity Analysis ---
         
-        self.wait(1)
-        self.play(FadeOut(title, eq_box, eq_rect, sidebar, flowchart, arrows))
-
-        # --- Scene 2: The Continuous Case ---
-        with self.voiceover(text="Let's look at a continuous example: y double prime plus 3y prime plus 2y equals 4e to the t, with specific initial conditions.") as tracker:
-            problem = MathTex(r"y'' + 3y' + 2y = 4e^t", color=PRIMARY_COLOR).to_corner(UL)
-            ics = MathTex(r"y(0)=1, y'(0)=0", font_size=30).next_to(problem, DOWN, aligned_edge=LEFT)
-            self.play(FadeIn(problem), FadeIn(ics))
-
-        with self.voiceover(text="First, we find the homogeneous solution using the characteristic equation.") as tracker:
-            char_eq = MathTex(r"r^2 + 3r + 2 = 0").shift(UP * 0.5)
-            char_eq_fact = MathTex(r"(r+1)(r+2)=0").move_to(char_eq)
-            roots = MathTex(r"r = -1, -2").next_to(char_eq_fact, DOWN)
-            yh = MathTex(r"y_h(t) = c_1e^{-t} + c_2e^{-2t}", color=HIGHLIGHT_HOMOGENEOUS).next_to(roots, DOWN)
-            
-            self.play(FadeIn(char_eq))
-            self.wait(0.5)
-            self.play(ReplacementTransform(char_eq, char_eq_fact))
-            self.play(FadeIn(roots), FadeIn(yh))
-
-        with self.voiceover(text="For the particular solution, we guess y sub p equals A e to the t. Substituting this back gives 6A equals 4, so A is two thirds.") as tracker:
-            particular_group = VGroup(
-                MathTex(r"\text{Guess: } y_p = Ae^t"),
-                MathTex(r"(A + 3A + 2A)e^t = 4e^t"),
-                MathTex(r"6A = 4 \Rightarrow A = 2/3", color=HIGHLIGHT_PARTICULAR)
-            ).arrange(DOWN).scale(0.85).next_to(yh, DOWN, buff=0.4)
-            
-            self.play(FadeIn(particular_group[0]))
-            self.play(FadeIn(particular_group[1]))
-            self.play(Indicate(particular_group[2]), FadeIn(particular_group[2]))
-
-        with self.voiceover(text="The general solution combines both parts. Here is the plot for our specific initial conditions.") as tracker:
-            gen_sol = MathTex(r"y(t) = c_1e^{-t} + c_2e^{-2t} + \frac{2}{3}e^t").to_edge(DOWN).shift(UP * 0.5)
-            # Clear derivation steps to prevent overlap with gen_sol at bottom
-            self.play(FadeOut(char_eq_fact, roots, yh, particular_group))
-            self.play(FadeIn(gen_sol))
-            self.wait(1)
-            self.play(FadeOut(gen_sol))
-
-            axes = Axes(x_range=[0, 3, 1], y_range=[0, 15, 5], axis_config={"color": PRIMARY_COLOR}).scale(0.7).shift(DOWN * 0.5)
-            labels = axes.get_axis_labels()
-            # Plot 1.66*exp(-2*x) - 1.33*exp(-x) + 0.66*exp(x)
-            graph = axes.plot(lambda x: 1.66*np.exp(-2*x) - 1.33*np.exp(-x) + 0.66*np.exp(x), x_range=[0, 3], color=HIGHLIGHT_HOMOGENEOUS)
-            self.play(FadeIn(axes), FadeIn(labels))
-            self.play(FadeIn(graph))
-        self.wait(1)
-        self.play(FadeOut(problem, ics, axes, labels, graph))
-
-        # --- Scene 3: Handling Discontinuity ---
-        with self.voiceover(text="Now consider a discontinuous forcing function g of t. It jumps from five down to zero at t equals 2.") as tracker:
-            axes3 = Axes(x_range=[0, 4, 1], y_range=[0, 6, 1]).scale(0.7).to_edge(UP)
-            g1 = Line(axes3.c2p(0, 5), axes3.c2p(2, 5), color=HIGHLIGHT_PARTICULAR)
-            g2 = Line(axes3.c2p(2, 0), axes3.c2p(4, 0), color=HIGHLIGHT_PARTICULAR)
-            open_circle = Circle(radius=0.1, color=HIGHLIGHT_PARTICULAR).move_to(axes3.c2p(2, 5))
-            closed_circle = Dot(axes3.c2p(2, 0), color=HIGHLIGHT_PARTICULAR)
-            
-            discon_line = DashedLine(axes3.c2p(2, 0), axes3.c2p(2, 6), color=HIGHLIGHT_DISCONTINUITY)
-            self.play(FadeIn(axes3), FadeIn(g1), FadeIn(g2), FadeIn(open_circle), FadeIn(closed_circle))
-            self.play(FadeIn(discon_line))
-
-        with self.voiceover(text="At the discontinuity, the solution y of t must remain smooth, meaning both the function and its first derivative must be continuous.") as tracker:
-            text_discon = Text("At t=2, g(t) is discontinuous. y(t) must be C1.", font_size=24, color=PRIMARY_COLOR).next_to(axes3, DOWN)
-            logic = VGroup(
-                MathTex(r"\lim_{t \to 2^-} y_1(t) = \lim_{t \to 2^+} y_2(t)"),
-                MathTex(r"\lim_{t \to 2^-} y'_1(t) = \lim_{t \to 2^+} y'_2(t)")
-            ).arrange(DOWN, buff=0.3).next_to(text_discon, DOWN)
-            
-            self.play(FadeIn(text_discon))
-            self.play(FadeIn(logic))
-            self.play(Indicate(closed_circle))
-
-        self.wait(1)
-        self.play(FadeOut(axes3, g1, g2, open_circle, closed_circle, discon_line, text_discon, logic))
-
-        # --- Scene 4: Piecewise Example (Part 1) ---
-        with self.voiceover(text="Let's solve a specific piecewise problem where the forcing function is 1 until pi, and 0 afterwards.") as tracker:
-            main_eq = MathTex(r"y'' + y = \begin{cases} 1 & 0 \le t < \pi \\ 0 & t \ge \pi \end{cases}").to_edge(UP)
-            label1 = Text("Interval 1: 0 <= t < pi", font_size=24).next_to(main_eq, DOWN)
-            eq1 = MathTex(r"y'' + y = 1, \quad y(0)=0, y'(0)=0").next_to(label1, DOWN)
-            self.play(FadeIn(main_eq))
-            self.play(FadeIn(label1), FadeIn(eq1))
-
-        with self.voiceover(text="In the first interval, the homogeneous solution is cosine plus sine, and the particular solution is 1. Solving for initial conditions gives y1 equals 1 minus cosine t.") as tracker:
-            sol_comp = VGroup(
-                MathTex(r"y_h = c_1\cos(t) + c_2\sin(t)"),
-                MathTex(r"y_p = 1")
-            ).arrange(DOWN).next_to(eq1, DOWN)
-            
-            solving_c = VGroup(
-                MathTex(r"y(0) = c_1(1) + c_2(0) + 1 = 0 \Rightarrow c_1 = -1"),
-                MathTex(r"y'(0) = -c_1(0) + c_2(1) = 0 \Rightarrow c_2 = 0")
-            ).arrange(DOWN).next_to(sol_comp, DOWN)
-            
-            res1 = MathTex(r"y_1(t) = 1 - \cos(t)", color=HIGHLIGHT_HOMOGENEOUS).move_to(sol_comp)
-            
-            self.play(FadeIn(sol_comp))
-            self.play(FadeIn(solving_c))
-            self.wait(0.5)
-            self.play(FadeOut(sol_comp, solving_c), FadeIn(res1))
-
-        with self.voiceover(text="At the hand-off point pi, we calculate the values of y and y prime to use as initial conditions for the next interval.") as tracker:
-            handoff_label = Text("At t = pi:", font_size=24).to_edge(LEFT).shift(DOWN * 1)
-            handoff_vals = VGroup(
-                MathTex(r"y_1(\pi) = 1 - (-1) = 2"),
-                MathTex(r"y'_1(\pi) = \sin(\pi) = 0")
-            ).arrange(DOWN).next_to(handoff_label, DOWN).set_color(HIGHLIGHT_DISCONTINUITY)
-            
-            self.play(FadeIn(handoff_label))
-            self.play(FadeIn(handoff_vals))
-            self.play(AnimationGroup(Indicate(handoff_vals[0]), Indicate(handoff_vals[1])))
+        # Block 5
+        self.play(FadeOut(vocab_box, vocab_title, vocab_list, flowchart, gen_eq, title))
         
-        self.wait(1)
-        saved_vals = handoff_vals.copy().to_corner(UR).scale(0.8)
-        self.play(FadeOut(label1, eq1, res1, handoff_label, handoff_vals), FadeIn(saved_vals))
-
-        # --- Scene 5: Piecewise Example (Part 2) ---
-        with self.voiceover(text="Now for the second interval where t is greater than pi, the equation becomes homogeneous. We use our previous hand-off values as the new initial conditions.") as tracker:
-            label2 = Text("Interval 2: t >= pi", font_size=24).next_to(main_eq, DOWN)
-            eq2 = MathTex(r"y'' + y = 0").next_to(label2, DOWN)
-            ics2 = MathTex(r"y_2(\pi) = 2, \quad y'_2(\pi) = 0").next_to(eq2, DOWN)
-            self.play(FadeIn(label2), FadeIn(eq2))
-            self.play(FadeIn(ics2))
-
-        with self.voiceover(text="Solving the homogeneous equation with these conditions, we find that A is negative two and B is zero.") as tracker:
-            y2_gen = MathTex(r"y_2(t) = A\cos(t) + B\sin(t)").next_to(ics2, DOWN)
-            y2_solve1 = MathTex(r"A\cos(\pi) + B\sin(\pi) = 2 \Rightarrow -A = 2 \Rightarrow A = -2").next_to(y2_gen, DOWN, buff=0.4)
-            y2_solve2 = MathTex(r"-A\sin(\pi) + B\cos(\pi) = 0 \Rightarrow -B = 0 \Rightarrow B = 0").next_to(y2_solve1, DOWN)
+        with self.voiceover(text="Step 1: Normalize. We must have a leading coefficient of 1 for the y-prime term.") as tracker:
+            prob_title = MathTex(r"(x^2 - 9)y' + 2xy = \frac{1}{x-5}, \quad y(4)=2", color=TEXT_COLOR).to_edge(UP)
             
-            self.play(FadeIn(y2_gen))
-            self.play(FadeIn(y2_solve1))
-            self.play(FadeIn(y2_solve2))
+            coeff = MathTex(r"(x^2 - 9)", color=SUCCESS_COLOR)
+            y_prime = MathTex(r"y'")
+            middle = MathTex(r"+ 2xy")
+            equals_sign = MathTex("=")
+            source_rhs = MathTex(r"\frac{1}{x-5}")
+            
+            working_eq = VGroup(coeff, y_prime, middle, equals_sign, source_rhs).arrange(RIGHT).shift(UP*1)
+            norm_rect = SurroundingRectangle(coeff, color=SUCCESS_COLOR)
+            
+            self.play(FadeIn(prob_title))
+            self.play(FadeIn(working_eq))
+            self.play(FadeIn(norm_rect))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 6
+        with self.voiceover(text="To do this, we divide every term in the equation by the coefficient of y-prime.") as tracker:
+            standard_form = VGroup(
+                MathTex(r"y'"),
+                MathTex(r"+"),
+                MathTex(r"\frac{2x}{x^2-9}"),
+                MathTex(r"y"),
+                MathTex(r"="),
+                MathTex(r"\frac{1}{(x-5)(x^2-9)}")
+            ).arrange(RIGHT).next_to(working_eq, DOWN, buff=1)
+            
+            self.play(ReplacementTransform(working_eq.copy(), standard_form))
+            self.play(FadeOut(norm_rect), FadeOut(working_eq), FadeOut(prob_title))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 7
+        with self.voiceover(text="Now we identify p of x and g of x.") as tracker:
+            # Highlight parts manually by rebuilding standard form
+            p_part = MathTex(r"\frac{2x}{x^2-9}", color=PX_COLOR)
+            g_part = MathTex(r"\frac{1}{(x-5)(x^2-9)}", color=GX_COLOR)
+            
+            final_std_form = VGroup(
+                MathTex(r"y'"),
+                MathTex(r"+"),
+                p_part,
+                MathTex(r"y"),
+                MathTex(r"="),
+                g_part
+            ).arrange(RIGHT).move_to(standard_form)
+            
+            self.play(ReplacementTransform(standard_form, final_std_form))
+            self.play(Indicate(p_part), Indicate(g_part))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 8
+        with self.voiceover(text="Step 2: Check for discontinuities. Where do these functions blow up?") as tracker:
+            exclusion = MathTex(r"x \neq \pm 3, 5", color=PX_COLOR).next_to(final_std_form, DOWN, buff=0.4)
+            self.play(FadeIn(exclusion))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 9
+        with self.voiceover(text="Visualizing this on a number line, we see four potential intervals.") as tracker:
+            number_line = NumberLine(
+                x_range=[-6, 8, 1],
+                length=10,
+                color=AXES_COLOR,
+                include_numbers=True,
+                label_direction=DOWN
+            ).shift(DOWN*2.8)
+            
+            m1 = Dot(number_line.n2p(-3), color=TEXT_COLOR)
+            m2 = Dot(number_line.n2p(3), color=TEXT_COLOR)
+            m3 = Dot(number_line.n2p(5), color=TEXT_COLOR)
+            
+            self.play(FadeIn(number_line))
+            self.play(FadeIn(m1, m2, m3))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # --- Scene 3: Constructing the Integrating Factor ---
         
-        with self.voiceover(text="This gives us y2 equals negative 2 cosine t. The final piecewise solution is shown here.") as tracker:
-            res2 = MathTex(r"y_2(t) = -2\cos(t)", color=HIGHLIGHT_PARTICULAR).move_to(y2_gen)
-            final_piecewise = MathTex(r"y(t) = \begin{cases} 1 - \cos(t) & 0 \le t < \pi \\ -2\cos(t) & t \ge \pi \end{cases}").scale(0.85).to_edge(DOWN).shift(UP * 0.5)
-            
-            self.play(FadeOut(y2_gen, y2_solve1, y2_solve2), FadeIn(res2))
-            self.play(FadeIn(final_piecewise))
-            
-        self.wait(1)
-        # Keep final_piecewise for Scene 6 as per blueprint
-        self.play(FadeOut(main_eq, label2, eq2, ics2, res2, saved_vals))
-
-        # --- Scene 6: Final Visualization ---
-        with self.voiceover(text="Finally, let's visualize the complete stitched solution. Notice the smooth transition at pi.") as tracker:
-            axes6 = Axes(x_range=[0, 2*PI, PI], y_range=[-2.5, 2.5, 1], x_length=6, y_length=4).to_edge(LEFT).shift(UP * 0.5)
-            pi_label = MathTex(r"\pi").move_to(axes6.c2p(PI, -0.4))
-            twopi_label = MathTex(r"2\pi").move_to(axes6.c2p(2*PI, -0.4))
-            
-            # Plot y1 = 1 - cos(t) [0, PI]
-            graph1 = axes6.plot(lambda x: 1 - np.cos(x), x_range=[0, PI], color=HIGHLIGHT_HOMOGENEOUS)
-            # Plot y2 = -2*cos(t) [PI, 2*PI]
-            graph2 = axes6.plot(lambda x: -2 * np.cos(x), x_range=[PI, 2*PI], color=HIGHLIGHT_PARTICULAR)
-            
-            v_line = DashedLine(axes6.c2p(PI, -2.5), axes6.c2p(PI, 2.5), color=HIGHLIGHT_DISCONTINUITY)
-            
-            self.play(FadeIn(axes6), FadeIn(pi_label), FadeIn(twopi_label))
-            self.play(FadeIn(graph1))
-            self.play(FadeIn(v_line))
-            self.play(FadeIn(graph2))
-
-        with self.voiceover(text="To recap: solve the first phase, calculate boundary values, use them as initial conditions for the second phase, and state the final piecewise form.") as tracker:
-            checklist = VGroup(
-                MathTex(r"1. \text{ Solve Phase 1 } \checkmark"),
-                MathTex(r"2. \text{ Boundary values } y, y' \checkmark"),
-                MathTex(r"3. \text{ Use as ICs for Phase 2 } \checkmark"),
-                MathTex(r"4. \text{ Final Piecewise Form } \checkmark")
-            ).arrange(DOWN, aligned_edge=LEFT).scale(0.8).to_edge(RIGHT)
-            
-            for item in checklist:
-                self.play(FadeIn(item))
-                self.wait(0.2)
+        # Block 10
+        self.play(FadeOut(exclusion, number_line, m1, m2, m3))
+        # Move normalized equation to top for workspace
+        self.play(final_std_form.animate.to_edge(UP, buff=1.5))
         
-        self.wait(3)
+        with self.voiceover(text="Step 3: The Integrating Factor, mu of x.") as tracker:
+            mu_label = MathTex(r"\mu(x)", color=MU_COLOR)
+            equals_mu = MathTex("=")
+            formula = MathTex(r"e^{\int p(x) dx}", color=MU_COLOR)
+            mu_eq = VGroup(mu_label, equals_mu, formula).arrange(RIGHT).shift(UP*0.5)
+            
+            self.play(FadeIn(mu_eq))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 11
+        with self.voiceover(text="We plug in our Yellow p(x) term.") as tracker:
+            mu_step2 = MathTex(r"\mu(x) = e^{\int", r"\frac{2x}{x^2-9}", "dx}", color=TEXT_COLOR).move_to(mu_eq)
+            mu_step2[1].set_color(PX_COLOR)
+            self.play(Transform(mu_eq, mu_step2))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 12
+        with self.voiceover(text="Using a simple u-substitution, the integral becomes the natural log of x-squared minus nine.") as tracker:
+            side_math = VGroup(
+                MathTex(r"u = x^2-9", font_size=28),
+                MathTex(r"du = 2x dx", font_size=28),
+                MathTex(r"\int \frac{1}{u} du = \ln|x^2-9|", font_size=28)
+            ).arrange(DOWN, aligned_edge=LEFT).to_edge(RIGHT, buff=0.5).shift(UP*0.5)
+            
+            box = SurroundingRectangle(side_math, color=AXES_COLOR)
+            self.play(FadeIn(box), FadeIn(side_math))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 13
+        with self.voiceover(text="The exponential and the log cancel out, leaving us with our multiplier.") as tracker:
+            mu_cancel = MathTex(r"\mu(x) =", "e", r"^{\ln", "|x^2-9|}", color=TEXT_COLOR).move_to(mu_eq)
+            mu_final = MathTex(r"\mu(x) = x^2-9", color=MU_COLOR).move_to(mu_eq)
+            
+            self.play(Transform(mu_eq, mu_cancel))
+            strike = Cross(mu_cancel[1:3], color=RED)
+            self.play(Create(strike))
+            self.play(FadeOut(strike), Transform(mu_eq, mu_final))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # --- Scene 4: General Solution Integration ---
+        
+        # Block 14
+        self.play(FadeOut(side_math, box, final_std_form, mu_eq))
+        
+        with self.voiceover(text="Step 4: Multiply the standard form by mu of x.") as tracker:
+            mult_eq = MathTex(r"(x^2-9) \left[ y' + \frac{2x}{x^2-9}y \right] = (x^2-9) \left[ \frac{1}{(x-5)(x^2-9)} \right]", font_size=32).to_edge(UP, buff=1.2)
+            self.play(FadeIn(mult_eq))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 15
+        with self.voiceover(text="The left side is now the perfect derivative of mu times y.") as tracker:
+            lhs_deriv = MathTex(r"\frac{d}{dx} [ (x^2-9) y ]", color=SUCCESS_COLOR, font_size=36).move_to(mult_eq.get_left(), aligned_edge=LEFT).shift(DOWN*1.5 + RIGHT*0.5)
+            self.play(FadeIn(lhs_deriv))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 16
+        with self.voiceover(text="On the right, terms cancel out beautifully, leaving just a simple fraction.") as tracker:
+            rhs_simp = MathTex(r"= \frac{1}{x-5}", color=TEXT_COLOR, font_size=36).next_to(lhs_deriv, RIGHT)
+            self.play(FadeIn(rhs_simp))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 17
+        with self.voiceover(text="Now, we integrate both sides.") as tracker:
+            int_eq = MathTex(r"\int \frac{d}{dx}[(x^2-9)y] dx = \int \frac{1}{x-5} dx").move_to(VGroup(lhs_deriv, rhs_simp))
+            self.play(FadeOut(lhs_deriv, rhs_simp), FadeIn(int_eq))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 18
+        with self.voiceover(text="Don't forget the constant of integration, C.") as tracker:
+            sol_step = MathTex(r"(x^2-9)y = \ln|x-5| + ", "C", color=TEXT_COLOR).move_to(int_eq)
+            sol_step[1].set_color(PX_COLOR)
+            
+            self.play(FadeOut(int_eq), FadeIn(sol_step))
+            int_eq = sol_step
+            self.play(Indicate(sol_step[1]))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # --- Scene 5: Interval of Validity & Initial Value ---
+        
+        # Block 19
+        self.play(FadeOut(mult_eq, sol_step))
+        
+        with self.voiceover(text="To find C, we use our initial condition y of 4 equals 2.") as tracker:
+            plug_in = MathTex(r"2 = \frac{\ln|4-5|+C}{4^2-9}", color=TEXT_COLOR).shift(UP*2)
+            self.play(FadeIn(plug_in))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 20
+        with self.voiceover(text="Since the natural log of 1 is zero, C equals 14.") as tracker:
+            c_val = MathTex(r"C = 14", color=SUCCESS_COLOR).next_to(plug_in, DOWN)
+            final_sol = MathTex(r"y = \frac{\ln|x-5| + 14}{x^2-9}", color=SUCCESS_COLOR).next_to(c_val, DOWN, buff=0.5)
+            self.play(FadeIn(c_val))
+            self.play(FadeIn(final_sol))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 21
+        self.play(FadeOut(plug_in, c_val, int_eq))
+        
+        with self.voiceover(text="Finally: Step 5. What is the Interval of Validity?") as tracker:
+            final_sol.generate_target()
+            final_sol.target.to_edge(UP).shift(LEFT*3)
+            
+            number_line_final = NumberLine(
+                x_range=[-6, 8, 1],
+                length=10,
+                color=AXES_COLOR,
+                include_numbers=True
+            ).shift(DOWN*1)
+            
+            dots = VGroup(
+                Dot(number_line_final.n2p(-3), color=RED),
+                Dot(number_line_final.n2p(3), color=RED),
+                Dot(number_line_final.n2p(5), color=RED)
+            )
+            
+            self.play(MoveToTarget(final_sol))
+            self.play(FadeIn(number_line_final))
+            self.play(FadeIn(dots))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 22
+        with self.voiceover(text="Our initial x is 4. We look for the largest continuous interval containing 4.") as tracker:
+            init_dot = Dot(number_line_final.n2p(4), color=SUCCESS_COLOR)
+            init_label = MathTex("x_0=4", font_size=24, color=SUCCESS_COLOR).next_to(init_dot, UP)
+            self.play(FadeIn(init_dot), FadeIn(init_label))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 23
+        with self.voiceover(text="The solution is only valid between the discontinuities at x equals 3 and x equals 5.") as tracker:
+            valid_segment = Line(
+                number_line_final.n2p(3), 
+                number_line_final.n2p(5), 
+                color=SUCCESS_COLOR, 
+                stroke_width=8
+            )
+            interval_text = MathTex(r"3 < x < 5", color=SUCCESS_COLOR).next_to(valid_segment, DOWN, buff=0.5)
+            
+            self.play(FadeIn(valid_segment))
+            self.play(FadeIn(interval_text))
+            self.wait(max(0.01, tracker.get_remaining_duration()))
+
+        # Block 24
+        with self.voiceover(text="Follow these five steps: Normalize, find discontinuities, calculate mu, integrate, and pick your interval based on x-nought.") as tracker:
+            self.play(FadeOut(number_line_final, dots, init_dot, init_label, valid_segment))
+            
+            final_group = VGroup(final_sol, interval_text).arrange(DOWN)
+            summary_box = SurroundingRectangle(final_group, color=SUCCESS_COLOR, buff=0.3)
+            res_display = VGroup(summary_box, final_group).scale(0.8).to_edge(RIGHT, buff=1)
+            
+            roadmap_end = flowchart.copy().scale(0.8).to_edge(LEFT, buff=1)
+            roadmap_end.set_color(SUCCESS_COLOR)
+            
+            self.play(
+                FadeIn(roadmap_end),
+                final_sol.animate.set_color(SUCCESS_COLOR).move_to(final_group[0]),
+                interval_text.animate.set_color(SUCCESS_COLOR).move_to(final_group[1]),
+                Create(summary_box)
+            )
+            self.wait(max(0.01, tracker.get_remaining_duration()))

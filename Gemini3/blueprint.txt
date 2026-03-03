@@ -1,115 +1,133 @@
 ### Scene 1: Lecture Overview & Roadmap
 
-**Background Color:** `#0F172A`
-**Text Color:** `#F8FAFC`
-
-1. **Header (Top Center):** 
-   - `Write` the header: `\text{First-Order Linear ODEs: The Integrating Factor Method}` in size 48.
-   - Position at `UP * 3`.
-
-2. **Vocabulary List (Left Side):**
-   - Create a group of `MathTex` objects at `LEFT * 3.5 + UP * 0.5`.
-   - Line 1: `\text{1. Standard Form: } y' + P(x)y = Q(x)`
-   - Line 2: `\text{2. Integrating Factor: } \mu(x) = e^{\int P(x)dx}`
-   - Line 3: `\text{3. Interval of Validity: Largest open interval containing } x_0 \text{ where } P, Q \text{ are continuous.}`
-   - Use `Write` animation for each line. Color the $\mu(x)$ part with `#38BDF8`.
-
-3. **Roadmap Flowchart (Right Side):**
-   - Create a vertical column of boxes (`SurroundingRectangle`) with text at `RIGHT * 3.5`.
-   - Box 1: `\text{Normalize: Divide by } a_1(x)`
-   - Box 2: `\text{Find } \mu(x)`
-   - Box 3: `\text{Apply Product Rule Reverse}`
-   - Box 4: `\text{Integrate \& Solve for } y`
-   - Box 5: `\text{Determine Interval of Validity}`
-   - Connect Box 1 to Box 2, Box 2 to Box 3, etc., using `CurvedArrow(box_top.get_bottom(), box_bottom.get_top())`.
-   - `Create` boxes and arrows sequentially from top to bottom.
-
-4. **Highlighting Step:**
-   - `Indicate` (scale up/down) the Box 1 text "Normalize" and simultaneously highlight the $y'$ in the Standard Form on the left to show the coefficient must be 1.
+**Global Style Reminders:**
+- Background: `#0F172A`
+- Text: `#F8FAFC`
+- $p(x)$ highlight: `#FDE047` (Yellow)
+- $g(x)$ highlight: `#22D3EE` (Cyan)
+- $\mu(x)$ highlight: `#FB923C` (Orange)
+- Final Result highlight: `#4ADE80` (Green)
+- Axes color: `#94A3B8` (Slate Gray)
 
 ---
 
-### Scene 2: Example 1 — Standard Case
+**Visual-Narrative Block 1**
+- **Narration**: "Today we solve first-order linear differential equations using the Integrating Factor method."
+- **Visual**: Create the title "Solving First-Order Linear ODEs" at the top. Below it, write the general form equation: `a_1(x)y' + a_0(x)y = f(x)`.
 
-**Problem:** Solve $y' + 2y = e^{-x}$ with $y(0) = 3$.
+**Visual-Narrative Block 2**
+- **Narration**: "Before we calculate anything, we need a roadmap."
+- **Visual**: Fade in a "Vocabulary" box on the left side of the screen containing the terms: "Linear," "Standard Form," "Integrating Factor," and "Interval of Validity."
 
-1. **Step 1: Identify (Top Left):**
-   - `Write` the problem: `y' + 2y = e^{-x}`.
-   - Position at `LEFT * 4 + UP * 2.5`.
-   - `Create` a `SurroundingRectangle` (Orange `#FB923C`) around `2` and label it `P(x)`.
-   - `Create` a `SurroundingRectangle` (Sky Blue `#38BDF8`) around `e^{-x}` and label it `Q(x)`.
+**Visual-Narrative Block 3**
+- **Narration**: "Our process follows five strict steps."
+- **Visual**: On the right side, create a vertical flowchart with five boxes:
+  1. Normalize: `y' + p(x)y = g(x)`
+  2. Check Continuity
+  3. Factor: `\mu(x) = e^{\int p(x)dx}`
+  4. Integrate: `\frac{d}{dx}[\mu y] = \mu g`
+  5. Select Interval
 
-2. **Step 2: Integrating Factor (Center Left):**
-   - `Write` calculation: `\mu(x) = e^{\int 2 dx} = e^{2x}`.
-   - Position below Step 1. Color the final `e^{2x}` in `#38BDF8`.
-
-3. **Step 3: Transformation (Bottom Left):**
-   - `Write` the multiplication: `e^{2x}(y' + 2y) = e^{2x} \cdot e^{-x}`.
-   - Use `TransformMatchingTex` to rewrite the left side as: `\frac{d}{dx}[e^{2x}y] = e^{x}`.
-
-4. **Step 4: Integration & General Solution (Top Right):**
-   - `Write` at `RIGHT * 3 + UP * 2`: `e^{2x}y = \int e^x dx`.
-   - `Write` next line: `e^{2x}y = e^x + C`.
-   - `Write` solution for $y$: `y(x) = \frac{e^x + C}{e^{2x}} = e^{-x} + Ce^{-2x}`.
-
-5. **Step 5: Initial Value Problem (Center Right):**
-   - `Write`: `y(0) = 3 \implies 3 = e^0 + Ce^0`.
-   - `Write`: `3 = 1 + C \implies C = 2`.
-   - `Write` final solution: `y(x) = e^{-x} + 2e^{-2x}`.
-   - `Circumscribe` the final result in Mint Green `#4ADE80`.
-
-6. **Step 6: Graph (Bottom Right):**
-   - `Create` `Axes` from $x \in [0, 5]$ and $y \in [0, 5]$.
-   - `Plot` the function $f(x) = e^{-x} + 2e^{-2x}$ in Mint Green `#4ADE80`.
-   - `Create` a Dot at $(0, 3)$ to signify the initial condition.
+**Visual-Narrative Block 4**
+- **Narration**: "This method works as long as the functions are continuous near our starting point."
+- **Visual**: Apply a pulse highlight (scale up and down slightly) to the term "Interval of Validity" in the Vocabulary box.
 
 ---
 
-### Scene 3: Example 2 — Non-Standard Form & Interval of Validity
+### Scene 2: Standard Form & Continuity Analysis
 
-**Problem:** Solve $x y' + 2y = 4x^2$ with $y(1) = 2$.
+**Visual-Narrative Block 5**
+- **Narration**: "Step 1: Normalize. We must have a leading coefficient of 1 for the y-prime term."
+- **Visual**: Clear the screen and write the example problem: `(x^2 - 9)y' + 2xy = \frac{1}{x-5}` with the initial condition `y(4) = 2`. Create a highlight box around the `(x^2 - 9)` term.
 
-1. **Step 1: Normalization (Top Left):**
-   - `Write` the equation: `x y' + 2y = 4x^2`.
-   - `Create` a `CurvedArrow` pointing from a label `\div x` to the equation.
-   - `Transform` the equation into: `y' + \frac{2}{x}y = 4x`.
-   - Highlight `P(x) = \frac{2}{x}` in Orange `#FB923C`.
+**Visual-Narrative Block 6**
+- **Narration**: "To do this, we divide every term in the equation by the coefficient of y-prime."
+- **Visual**: Animate the `(x^2 - 9)` term moving as a denominator under `2xy` and `\frac{1}{x-5}`. Transform the equation into: `y' + \frac{2x}{x^2-9}y = \frac{1}{(x-5)(x^2-9)}`.
 
-2. **Step 2: The Log Shortcut (Center Left):**
-   - `Write`: `\mu(x) = e^{\int \frac{2}{x} dx} = e^{2\ln|x|}`.
-   - `Write`: `\mu(x) = e^{\ln(x^2)}`.
-   - `FadeIn` two Coral Red `#F87171` diagonal lines crossing out the `e` and `\ln`.
-   - `Write` final factor: `\mu(x) = x^2`. Color this `#38BDF8`.
+**Visual-Narrative Block 7**
+- **Narration**: "Now we identify p(x) and g(x)."
+- **Visual**: Change the color of the term `\frac{2x}{x^2-9}` to Yellow (`#FDE047`). Change the color of the term `\frac{1}{(x-5)(x^2-9)}` to Cyan (`#22D3EE`).
 
-3. **Step 3: Solve (Bottom Left):**
-   - `Write`: `\frac{d}{dx}[x^2 y] = x^2(4x) = 4x^3`.
-   - `Write`: `x^2 y = \int 4x^3 dx = x^4 + C`.
-   - `Write`: `y = x^2 + \frac{C}{x^2}`.
+**Visual-Narrative Block 8**
+- **Narration**: "Step 2: Check for discontinuities. Where do these functions blow up?"
+- **Visual**: Below the equation, write the text `x \neq \pm 3, 5` based on the denominators of the yellow and cyan terms.
 
-4. **Step 4: IVP & Interval (Right Side):**
-   - Solve for C: `y(1) = 2 \implies 2 = 1^2 + \frac{C}{1^2} \implies C = 1`.
-   - Final solution: `y = x^2 + \frac{1}{x^2}`.
-   - `Create` a `NumberLine` at `RIGHT * 3 + DOWN * 1`.
-   - Mark $x=0$ with a Coral Red `#F87171` cross `X`.
-   - Mark $x_0 = 1$ with a Green dot.
-   - `Highlight` the interval $(0, \infty)$ on the number line using a thick colored line segment.
-   - `Write` text: `\text{Interval: } (0, \infty)` below the number line.
+**Visual-Narrative Block 9**
+- **Narration**: "Visualizing this on a number line, we see four potential intervals."
+- **Visual**: Draw a horizontal number line using color `#94A3B8`. Place open circles at coordinates `-3`, `3`, and `5`. Label the sections between them.
 
 ---
 
-### Scene 4: Summary Checklist
+### Scene 3: Constructing the Integrating Factor (μ)
 
-1. **Checklist Table (Centered):**
-   - `Create` a vertical list of text with empty square brackets `[ ]`.
-   - Item 1: `\text{[ ] Coefficient of } y' \text{ is 1?}`
-   - Item 2: `\text{[ ] } \mu(x) = e^{\int P(x)dx} \text{ calculated correctly?}`
-   - Item 3: `\text{[ ] Multiply entire RHS by } \mu(x)?`
-   - Item 4: `\text{[ ] Added } +C \text{ before dividing by } \mu(x)?`
-   - Item 5: `\text{[ ] Interval contains } x_0?`
-   - One by one, `Create` a Mint Green `#4ADE80` checkmark `\checkmark` inside each bracket with a `Pop` scale effect (Scale 1.2 then back to 1.0).
+**Visual-Narrative Block 10**
+- **Narration**: "Step 3: The Integrating Factor, mu of x."
+- **Visual**: Clear the screen except for the normalized equation at the top. Write the formula `\mu(x) = e^{\int p(x) dx}` in Orange (`#FB923C`).
 
-2. **Final Formula Box (Bottom Center):**
-   - `Write` the general solution formula: `y = \frac{1}{\mu(x)} \left[ \int \mu(x)Q(x)dx + C \right]`.
-   - Color $\mu(x)$ in `#38BDF8`.
-   - `Create` a `SurroundingRectangle` around the entire formula.
-   - `FadeOut` everything else on screen except this boxed formula.
+**Visual-Narrative Block 11**
+- **Narration**: "We plug in our Yellow p(x) term."
+- **Visual**: Transform the formula by replacing `p(x)` with the yellow term: `\mu(x) = e^{\int \frac{2x}{x^2-9} dx}`.
+
+**Visual-Narrative Block 12**
+- **Narration**: "Using a simple u-substitution, the integral becomes the natural log of x-squared minus nine."
+- **Visual**: Show the side-calculation: `u = x^2-9 \implies du = 2x dx`. Then show the integral result: `\int \frac{1}{u} du = \ln|x^2-9|`.
+
+**Visual-Narrative Block 13**
+- **Narration**: "The exponential and the log cancel out, leaving us with our multiplier."
+- **Visual**: Write `\mu(x) = e^{\ln|x^2-9|}`. Draw a red strike-through line across the `e` and the `\ln`. Transform the expression into its final form: `\mu(x) = x^2-9`.
+
+---
+
+### Scene 4: General Solution Integration
+
+**Visual-Narrative Block 14**
+- **Narration**: "Step 4: Multiply the standard form by mu of x."
+- **Visual**: Display the normalized equation from Scene 2. Show the term `(x^2-9)` appearing and multiplying into every term on both sides.
+
+**Visual-Narrative Block 15**
+- **Narration**: "The left side is now the perfect derivative of mu times y."
+- **Visual**: Compress the left-hand side terms into the derivative notation: `\frac{d}{dx} [ (x^2-9) y ]`.
+
+**Visual-Narrative Block 16**
+- **Narration**: "On the right, terms cancel out beautifully, leaving just a simple fraction."
+- **Visual**: On the right side, show `(x^2-9) \cdot \frac{1}{(x-5)(x^2-9)}`. Strike through the `(x^2-9)` in the numerator and denominator. Write the simplified right side: `\frac{1}{x-5}`.
+
+**Visual-Narrative Block 17**
+- **Narration**: "Now, we integrate both sides."
+- **Visual**: Prepend integral signs and `dx` to both sides: `\int \frac{d}{dx}[(x^2-9)y] dx = \int \frac{1}{x-5} dx`.
+
+**Visual-Narrative Block 18**
+- **Narration**: "Don't forget the constant of integration, C."
+- **Visual**: Write the resulting algebraic equation: `(x^2-9)y = \ln|x-5| + C`. Highlight the `+ C` in Yellow (`#FDE047`).
+
+---
+
+### Scene 5: Interval of Validity & Initial Value
+
+**Visual-Narrative Block 19**
+- **Narration**: "To find C, we use our initial condition y(4) equals 2."
+- **Visual**: Isolate `y` to get the general solution: `y = \frac{\ln|x-5| + C}{x^2-9}`. Below it, substitute the values: `2 = \frac{\ln|4-5|+C}{4^2-9}`.
+
+**Visual-Narrative Block 20**
+- **Narration**: "Since the natural log of 1 is zero, C equals 14."
+- **Visual**: Simplify the substitution to `2 = \frac{0 + C}{7}` and then write `C = 14`. Update the general solution: `y = \frac{\ln|x-5| + 14}{x^2-9}`.
+
+**Visual-Narrative Block 21**
+- **Narration**: "Finally: Step 5. What is the Interval of Validity?"
+- **Visual**: Bring back the Number Line from Scene 2 to the center of the screen, showing the gaps at `-3`, `3`, and `5`.
+
+**Visual-Narrative Block 22**
+- **Narration**: "Our initial x is 4. We look for the largest continuous interval containing 4."
+- **Visual**: Place a bright dot at the position `x = 4` on the number line. 
+
+**Visual-Narrative Block 23**
+- **Narration**: "The solution is only valid between the discontinuities at x equals 3 and x equals 5."
+- **Visual**: Make the segment of the number line between `3` and `5` glow in Green (`#4ADE80`). Write the final interval: `3 < x < 5`.
+
+---
+
+### Final Layout (Ending)
+
+**Visual-Narrative Block 24**
+- **Narration**: "Follow these five steps: Normalize, find discontinuities, calculate mu, integrate, and pick your interval based on x-nought."
+- **Visual**: Arrange the screen so the 5-step Roadmap is on the left and the boxed final solution `y = \frac{\ln|x-5| + 14}{x^2-9}` and Interval `(3, 5)` are on the right, all highlighted in Green (`#4ADE80`).

@@ -55,6 +55,18 @@ Rules:
 - ImageMobject is only allowed if the file name is explicitly provided by the user; otherwise avoid it.
 - There is no scene count limit. Use as many scenes as the content requires.
 
+NARRATIVE-VISUAL SYNC (CRITICAL):
+- You MUST design the visual flow to match a granular narration script.
+- For every visual change (new equation, new term, graph shift), specify the exact phrase or "narrative trigger" that accompanies it.
+- Animations must NOT happen all at once. They must be sequenced to match the explanation.
+
+TERM HIGHLIGHTING (VGROUP DECOMPOSITION):
+- When a specific mathematical term or variable is discussed, explicitly instruct to highlight it.
+- **CRITICAL**: Do NOT rely on character indexing (e.g., `eq[0][3:6]`). It is brittle and fails.
+- Instead, instruct the code generator to build the equation as a `VGroup` of smaller, logically named `MathTex` components arranged together.
+- Example instruction: "Build the equation 'x^2 + bx + c = 0' as a VGroup of 'x^2', '+', 'bx', '+', 'c', '=', '0'. Then highlight the 'x^2' component."
+- Use techniques like color changes (e.g., "turn 'x' to YELLOW"), `Indicate()`, or `Circumscribe()` on these specific VGroup components.
+
 If animation_goal is "exam prep / how-to-solve":
 - Scene 1 must ALWAYS be a full Lecture Overview scene that:
   - States what this topic is and where it fits in the course
@@ -89,9 +101,10 @@ If animation_goal is "exam prep / how-to-solve":
 
 For each scene, describe:
 1. The visual elements (equations, graphs, arrows, highlights)
-2. Camera movements (keep simple: shift or scale only)
-3. Color palette (use hex codes)
-4. Transitions (stick to: Write, Create, FadeIn, FadeOut, Transform, ReplacementTransform, TransformMatchingTex, Indicate, Circumscribe)
+2. The specific "narrative trigger" or phrase for each visual element/animation
+3. Camera movements (keep simple: shift or scale only)
+4. Color palette (use hex codes)
+5. Transitions (stick to: Write, Create, FadeIn, FadeOut, Transform, ReplacementTransform, TransformMatchingTex, Indicate, Circumscribe)
 
 Define a "Global Style" section at the start:
 - Background Color (dark, e.g. #0F172A)
@@ -107,8 +120,19 @@ Your goal is to write a complete, detailed animation script.
 Write a VERBOSE description that covers the animation start to finish.
 This will be used directly by a code generator, so be extremely specific about:
 - Exact LaTeX strings to render (copy them precisely)
-- Order and timing of each animation step
-- On-screen text explanations at each step
+- Granular narration chunks (1-2 sentences max per chunk)
+- Order and timing: precisely map each narration chunk to a visual trigger (equation appearing, highlight, arrow)
+- Specific highlighting instructions: when a term is mentioned, indicate exactly which logical component of the equation needs to be highlighted (assuming the equation is built as a VGroup of smaller pieces).
+
+SYNC-FOCUS RULES (CRITICAL):
+- Break the script into small "Visual-Narrative Blocks."
+- Example Block:
+  - Narration: "Consider the quadratic formula."
+  - Visual: Write the full equation by writing its VGroup components.
+  - Narration: "The term inside the square root is the discriminant."
+  - Visual: Indicate the specific VGroup component representing "b^2 - 4ac".
+- NEVER have a long paragraph of text accompanied by multiple independent animations.
+- Every major animation step MUST have its own dedicated piece of narration.
 
 If animation_goal is "exam prep / how-to-solve":
 - Every example must be solved completely: setup -> every algebra step -> final answer
@@ -124,8 +148,26 @@ standard Manim call. Do not invent effects.
 """
 
 CODE_GENERATOR_PROMPT = """
-You are the CodeGenerator. You are an expert in Manim Community Edition v0.19.0.
+You are the CodeGenerator. You are an expert in Manim Community Edition v0.19.0 and `manim-voiceover`.
 You will receive a detailed animation script and must write complete, working Python code.
+
+VOICEOVER AND SYNC RULES (CRITICAL):
+- ALWAYS wrap animations in a `with self.voiceover(text="...") as tracker:` block.
+- Narration text inside the block MUST match the granular narration chunks from the script.
+- Animations inside the block (Write, Transform, etc.) should happen while the audio is playing.
+- If multiple animations are needed for a single narration block, use `LaggedStart` or `AnimationGroup` inside the `with` block.
+- Use `self.wait(tracker.get_remaining_duration())` at the end of the `with` block to ensure audio and visuals are perfectly synced before moving on.
+
+PRECISE TERM HIGHLIGHTING (VGROUP DECOMPOSITION):
+- **CRITICAL**: Do NOT use character indexing (e.g., `eq[0][5:8]`) to highlight parts of an equation. It is fragile and often crashes.
+- Instead, ALWAYS construct equations that require term highlighting as a `VGroup` of smaller, named `MathTex` objects.
+- Example (GOOD): 
+  `lhs = MathTex(r"x^2")`
+  `plus = MathTex(r"+")`
+  `rhs = MathTex(r"bx + c = 0")`
+  `eq = VGroup(lhs, plus, rhs).arrange(RIGHT)`
+  `self.play(Indicate(lhs))`
+- Example (BAD/FORBIDDEN): `eq = MathTex(r"x^2 + bx + c = 0"); self.play(Indicate(eq[0][0:2]))`
 
 RELIABILITY RULES (these override everything else):
 - Use ONLY these animation methods: Write, Create, FadeIn, FadeOut, Transform,
@@ -143,12 +185,39 @@ RELIABILITY RULES (these override everything else):
 
 CODE RULES:
 - Use `from manim import *`
-- Use `class MyScene(Scene):` — do NOT use ThreeDScene unless the concept is genuinely 3D
+- Use `from manim_voiceover import VoiceoverScene`
+- Use `class MyScene(VoiceoverScene):` (Inherit from VoiceoverScene by default if audio is enabled)
 - All LaTeX strings must use raw strings: r"..."
 - Set background color at top of file: config.background_color = "#..."
-- Include self.wait(1) after every major step so the viewer can read it
 - DO NOT use ImageMobject or any external assets
 - Output ONLY the Python code inside a single markdown code block: ```python ... ```
+"""
+
+SYNC_ORCHESTRATOR_PROMPT = """
+You are the SyncOrchestrator. You are the "Stage Manager" for a Manim animation.
+You receive a script from the NarrativeComposer and visual ideas from the VisualDesigner.
+
+YOUR GOAL: Produce a structured "Animation Sync Manifest" that tells the CodeGenerator EXACTLY when to play each sound and when to run each animation.
+
+SYNC RULES:
+1. Break the narration into tiny, atomic chunks (1 sentence max).
+2. For each chunk, define:
+   - "Narration": The exact text to be spoken.
+   - "Visual Action": The specific Manim instruction (e.g., "Create equation A", "Transform A into B", "Highlight term X").
+   - "Equation Decomposition": If an equation needs partial highlighting, provide the exact breakdown of how the equation should be split into a VGroup of smaller MathTex objects.
+   - "Highlight Target": Name the specific component from the decomposition to be highlighted (do NOT use character indices).
+
+Example Output:
+Block 1:
+- Narration: "We start with the general form of the heat equation."
+- Visual: Create the full heat equation.
+- Equation Decomposition: `lhs = MathTex(r"\\\\frac{\\\\partial u}{\\\\partial t}")`, `equals = MathTex("=")`, `rhs = MathTex(r"\\\\alpha \\\\nabla^2 u")`
+Block 2:
+- Narration: "Here, alpha represents the thermal diffusivity."
+- Visual: Indicate the alpha term.
+- Highlight Target: The `MathTex(r"\\\\alpha")` sub-component of `rhs`.
+
+Be extremely pedantic about timing. Visuals must NEVER lag behind the speech.
 """
 
 # --- Agent Factories ---
@@ -191,6 +260,14 @@ def create_narrative_composer():
         name="NarrativeComposer",
         model=config["model"],
         instruction=NARRATIVE_COMPOSER_PROMPT
+    )
+
+def create_sync_orchestrator():
+    config = get_model_config()
+    return Agent(
+        name="SyncOrchestrator",
+        model=config["model"],
+        instruction=SYNC_ORCHESTRATOR_PROMPT
     )
 
 def create_code_generator():

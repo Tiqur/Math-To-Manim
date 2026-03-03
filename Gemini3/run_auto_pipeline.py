@@ -193,6 +193,9 @@ CRITICAL OPENGL AND MANIM RULES:
    FIX: Replace all of the above with FadeOut(old)/FadeIn(new).
 9. GrowFromEdge CRASH: Use FadeIn() instead.
 10. SCOPE: When fixing, ONLY change the lines in the traceback.
+11. ZERO-DURATION WAIT: self.wait(tracker.get_remaining_duration()) CRASHES when remaining == 0.
+    ALWAYS wrap it: self.wait(max(0.01, tracker.get_remaining_duration()))
+    This applies to EVERY voiceover block — no exceptions.
 """
 
 # ---------------------------------------------------------------------------
@@ -251,7 +254,8 @@ class IntegratedPipeline(Gemini3Pipeline):
             ("PrerequisiteExplorer", "Building knowledge tree…"),
             ("MathematicalEnricher", "Enriching with LaTeX…"),
             ("VisualDesigner",       "Designing storyboard…"),
-            ("NarrativeComposer",    "Composing verbose prompt…"),
+            ("NarrativeComposer",    "Composing script…"),
+            ("SyncOrchestrator",     "Aligning sync manifest…"),
             ("CodeGenerator",        "Generating Manim code…"),
         ]
 
@@ -264,7 +268,7 @@ class IntegratedPipeline(Gemini3Pipeline):
         if VERBOSE:
             logger.console.rule("[bold red]Integrated Pipeline Start[/bold red]")
         else:
-            console.print("[bold blue]⚙  Running generation swarm (6 agents)…[/bold blue]")
+            console.print("[bold blue]⚙  Running generation swarm (7 agents)…[/bold blue]")
 
         with Progress(
             SpinnerColumn(),
@@ -324,25 +328,42 @@ class IntegratedPipeline(Gemini3Pipeline):
             progress.advance(task)
 
             # --- Agent 5: NarrativeComposer ---
-            progress.update(task, description="[cyan]NarrativeComposer[/cyan] — Composing prompt…")
+            progress.update(task, description="[cyan]NarrativeComposer[/cyan] — Composing script…")
             if VERBOSE:
-                logger.log_agent_start("NarrativeComposer", "Composing verbose prompt…")
+                logger.log_agent_start("NarrativeComposer", "Composing verbose script…")
             verbose_prompt = _agent(
                 self.narrative_composer,
-                f"Write a verbose animation prompt based on this storyboard: {storyboard}",
+                f"Write a verbose animation script based on this storyboard: {storyboard}",
                 "NarrativeComposer",
             )
             if VERBOSE:
                 logger.log_agent_completion("NarrativeComposer", str(verbose_prompt))
             progress.advance(task)
 
-            # --- Agent 6: CodeGenerator ---
+            # --- Agent 6: SyncOrchestrator ---
+            progress.update(task, description="[cyan]SyncOrchestrator[/cyan] — Aligning sync manifest…")
+            if VERBOSE:
+                logger.log_agent_start("SyncOrchestrator", "Aligning narration with visual actions…")
+            sync_manifest = _agent(
+                self.sync_orchestrator,
+                f"Orchestrate this script and storyboard into a sync manifest: {verbose_prompt} {storyboard}",
+                "SyncOrchestrator",
+            )
+            if VERBOSE:
+                logger.log_agent_completion("SyncOrchestrator", str(sync_manifest))
+            else:
+                # Show a tiny summary even in non-verbose mode
+                blocks = len(re.findall(r"Block \d+", str(sync_manifest))) or 1
+                console.print(f"[cyan]  → Sync Manifest generated ({blocks} visual-narrative blocks)[/cyan]")
+            progress.advance(task)
+
+            # --- Agent 7: CodeGenerator ---
             progress.update(task, description="[cyan]CodeGenerator[/cyan] — Generating Manim code…")
             if VERBOSE:
                 logger.log_agent_start("CodeGenerator", "Generating Manim code…")
             full_code_prompt = f"""
-        Generate the complete Manim code for this detailed description:
-        {verbose_prompt}
+        Generate the complete Manim code based on this detailed sync manifest:
+        {sync_manifest}
 
         {MANIM_CHEAT_SHEET}
 
@@ -960,6 +981,22 @@ class GeminiTTSService(SpeechService):
             )
 '''
 
+def purge_voiceover_cache():
+    """Delete stale .mp3/audio files and the cache.json to avoid manim-voiceover corruption crashes."""
+    removed_files = 0
+    for root, dirs, files in os.walk("media/voiceovers"):
+        for fname in files:
+            if fname.endswith((".mp3", ".wav", ".json")):
+                fpath = os.path.join(root, fname)
+                try:
+                    os.remove(fpath)
+                    removed_files += 1
+                except Exception:
+                    pass
+    if removed_files:
+        console.print(f"[yellow]  Purged {removed_files} stale voiceover cache files (including cache.json).[/yellow]")
+
+
 def write_gemini_tts_service(output_dir: str, purge_gtts_cache: bool = True) -> str:
     dest = os.path.join(output_dir, "gemini_tts_service.py")
     with open(dest, "w", encoding="utf-8") as f:
@@ -967,17 +1004,7 @@ def write_gemini_tts_service(output_dir: str, purge_gtts_cache: bool = True) -> 
     console.print(f"[green]  ✓ GeminiTTSService written: {file_link(dest, 'gemini_tts_service.py')}[/green]")
 
     if purge_gtts_cache:
-        # Delete stale gTTS .mp3 files from previous runs so they don't show up
-        # in the audio table and don't confuse manim-voiceover's cache lookup.
-        removed = 0
-        for root, dirs, files in os.walk("media/voiceovers"):
-            for fname in files:
-                if fname.endswith(".mp3"):
-                    fpath = os.path.join(root, fname)
-                    os.remove(fpath)
-                    removed += 1
-        if removed:
-            console.print(f"[yellow]  Purged {removed} stale gTTS .mp3 file(s) from media/voiceovers/[/yellow]")
+        purge_voiceover_cache()
 
     return dest
 
@@ -1053,35 +1080,179 @@ def patch_scene_for_gemini_tts(output_file: str, tts_model: str, tts_voice: str,
 # Patch utilities
 # ---------------------------------------------------------------------------
 
-def apply_patch_strreplace(file_path: str, patch_content: str) -> bool:
-    blocks = re.findall(
-        r"<<<SEARCH\s*\n(.*?)>>>REPLACE\s*\n(.*?)<<<END",
-        patch_content, re.DOTALL,
+def apply_patch_strreplace(file_path: str, patch_content: str, hint_line: int | None = None) -> bool:
+    # 1. Flexible regex: Matches <<<SEARCH [content] >>>REPLACE [content] <<<END
+    #    Captures content non-greedily until the next tag.
+    pattern = re.compile(
+        r"<<<SEARCH\s*(.*?)\s*>>>REPLACE\s*(.*?)\s*<<<END",
+        re.DOTALL | re.IGNORECASE
     )
+    blocks = pattern.findall(patch_content)
+    
+    # --- Smart Greedy Repair Logic ---
     if not blocks:
-        return False
+        # Check if we have the start tags but are missing the end tag
+        search_match = re.search(r"<<<SEARCH\s*(.*?)\s*>>>REPLACE", patch_content, re.DOTALL | re.IGNORECASE)
+        if search_match:
+            vprint("[yellow]  str_replace: Found SEARCH/REPLACE tags but missing <<<END. Attempting smart repair...[/yellow]")
+            search_raw = search_match.group(1)
+            
+            # Find where REPLACE starts, to get everything after it
+            # We use the match end to locate the start of the REPLACE content
+            replace_start_idx = search_match.end()
+            replace_content_raw = patch_content[replace_start_idx:]
+            
+            # Heuristic: Stop at the next code fence if it exists, otherwise take it all
+            # This handles cases where the model writes ``` at the end but forgets <<<END
+            fence_match = re.search(r"\n\s*```", replace_content_raw)
+            if fence_match:
+                replace_raw = replace_content_raw[:fence_match.start()]
+                vprint(f"[dim]  Smart repair: terminated REPLACE block at code fence (length {len(replace_raw)}).[/dim]")
+            else:
+                replace_raw = replace_content_raw
+                vprint(f"[dim]  Smart repair: consumed remainder of text (length {len(replace_raw)}).[/dim]")
+            
+            blocks = [(search_raw, replace_raw)]
+        else:
+            console.print("[bold red]  str_replace: No valid <<<SEARCH ... >>>REPLACE block found.[/bold red]")
+            if VERBOSE:
+                console.print(Panel(patch_content, title="Raw Patch Content (Failed Parse)", border_style="dim"))
+            return False
 
     before_hash = file_hash(file_path)
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    for idx, (search, replace) in enumerate(blocks, 1):
-        search_text = search.rstrip("\n")
-        if search_text not in content:
-            if search_text + "\n" in content:
-                search_text = search_text + "\n"
-            else:
-                console.print(f"[bold red]  str_replace block {idx}: search text not found.[/bold red]")
+    new_content = content
+    
+    for idx, (search_raw, replace_raw) in enumerate(blocks, 1):
+        # 2. Cleanup: Remove markdown code fences if captured inside the block
+        search_text = re.sub(r"^```\w*\s*\n", "", search_raw)
+        search_text = re.sub(r"\n\s*```\s*$", "", search_text)
+        replace_text = re.sub(r"^```\w*\s*\n", "", replace_raw)
+        replace_text = re.sub(r"\n\s*```\s*$", "", replace_text)
+
+        # Log exactly what we are working with
+        if VERBOSE:
+            console.print(f"[bold cyan]Block {idx} Extracted:[/bold cyan]")
+            console.print(f"[dim]SEARCH:\n{search_text!r}[/dim]")
+            console.print(f"[dim]REPLACE:\n{replace_text!r}[/dim]")
+
+        # 3. Trim strict newlines/whitespace from ends for matching
+        search_clean = search_text.strip()
+        replace_clean = replace_text.strip()
+        
+        if not search_clean:
+            console.print(f"[yellow]  str_replace block {idx}: Empty SEARCH block. Skipping.[/yellow]")
+            continue
+
+        # Strategy A: Exact literal match (best)
+        if search_clean in new_content:
+            count = new_content.count(search_clean)
+            if count > 1:
+                if hint_line is not None:
+                    # Disambiguate: pick the occurrence whose start position is closest to hint_line
+                    lines_so_far = new_content.splitlines(keepends=True)
+                    occurrences = []
+                    pos = 0
+                    search_pos = 0
+                    while True:
+                        idx_found = new_content.find(search_clean, search_pos)
+                        if idx_found == -1:
+                            break
+                        line_num = new_content[:idx_found].count("\n") + 1
+                        occurrences.append((idx_found, line_num))
+                        search_pos = idx_found + 1
+                    best = min(occurrences, key=lambda x: abs(x[1] - hint_line))
+                    console.print(f"[yellow]  str_replace block {idx}: {count} matches — picking line {best[1]} (closest to hint line {hint_line}).[/yellow]")
+                    before = new_content[:best[0]]
+                    after  = new_content[best[0] + len(search_clean):]
+                    new_content = before + replace_clean + after
+                    console.print(f"[green]  str_replace block {idx}/{len(blocks)} applied (exact match, hint-disambiguated).[/green]")
+                    continue
+                console.print(f"[yellow]  str_replace block {idx}: {count} matches (exact). Ambiguous. Skipping.[/yellow]")
                 return False
-        count = content.count(search_text)
-        if count > 1:
-            console.print(f"[yellow]  str_replace block {idx}: {count} matches — ambiguous, skipping.[/yellow]")
+            
+            new_content = new_content.replace(search_clean, replace_clean, 1)
+            console.print(f"[green]  str_replace block {idx}/{len(blocks)} applied (exact match).[/green]")
+            continue
+            
+        console.print(f"[yellow]  str_replace block {idx}: Exact match failed. Trying fuzzy...[/yellow]")
+        if VERBOSE:
+             console.print(f"[dim]  Search block start: {search_clean[:60]!r}...[/dim]")
+
+        # Strategy B: Line-by-line whitespace-insensitive match (Fuzzy)
+        search_lines_strict = [l.strip() for l in search_text.splitlines() if l.strip()]
+        if not search_lines_strict:
+             console.print(f"[yellow]  str_replace block {idx}: SEARCH block contains no non-whitespace lines. Skipping.[/yellow]")
+             continue
+        
+        if any(l == "..." for l in search_lines_strict):
+            console.print(f"[yellow]  str_replace block {idx}: Warning: SEARCH block contains '...'. This often fails; models should use literal context.[/yellow]")
+
+        content_lines = new_content.splitlines(keepends=True)
+        content_info = [(i, l.strip()) for i, l in enumerate(content_lines) if l.strip()]
+        content_filtered_indices = [x[0] for x in content_info]
+        content_filtered_text = [x[1] for x in content_info]
+        
+        candidates = []
+        n_search = len(search_lines_strict)
+        
+        for i in range(len(content_filtered_text) - n_search + 1):
+            match = True
+            for j in range(n_search):
+                if content_filtered_text[i+j] != search_lines_strict[j]:
+                    match = False
+                    break
+            if match:
+                candidates.append(i)
+        
+        if not candidates:
+            console.print(f"[bold red]  str_replace block {idx}: SEARCH block not found (fuzzy).[/bold red]")
+            # (Diagnostic code omitted for brevity in prompt, but logic remains same)
             return False
-        content = content.replace(search_text, replace.rstrip("\n"), 1)
-        console.print(f"[green]  str_replace block {idx}/{len(blocks)} applied.[/green]")
+            
+        if len(candidates) > 1:
+            if hint_line is not None:
+                def _dist(c):
+                    return abs(content_filtered_indices[c] + 1 - hint_line)
+                candidates = [min(candidates, key=_dist)]
+                console.print(f"[yellow]  str_replace block {idx}: {len(candidates)+len(candidates)-1} fuzzy matches — hint-disambiguated to line {content_filtered_indices[candidates[0]]+1}.[/yellow]")
+            else:
+                match_lines = [content_filtered_indices[c] + 1 for c in candidates]
+                console.print(f"[yellow]  str_replace block {idx}: {len(candidates)} fuzzy matches. Ambiguous. Skipping.[/yellow]")
+                return False
+            
+        f_start = candidates[0]
+        f_end = f_start + n_search - 1
+        start_line_orig = content_filtered_indices[f_start]
+        end_line_orig = content_filtered_indices[f_end]
+        original_snippet = "".join(content_lines[start_line_orig : end_line_orig + 1])
+        
+        replacement_to_use = replace_clean + ("\n" if replace_clean else "")
+        new_content = new_content.replace(original_snippet, replacement_to_use, 1)
+        console.print(f"[green]  str_replace block {idx}/{len(blocks)} applied (fuzzy match).[/green]")
+
+    # --- SYNTAX CHECK (The "Safety Guard") ---
+    # Before writing to disk, verify the new content is valid Python.
+    is_valid, syntax_err = check_syntax(new_content)
+    if not is_valid:
+        console.print("[bold red]  SAFETY GUARD: Patch application resulted in invalid syntax! Rejecting patch.[/bold red]")
+        console.print(f"[red]{syntax_err}[/red]")
+        if VERBOSE:
+             console.print("[dim]  Corrupted content preview (surrounding error):[/dim]")
+             err_line = extract_error_line(syntax_err)
+             if err_line:
+                 lines = new_content.splitlines()
+                 start = max(0, err_line - 5)
+                 end = min(len(lines), err_line + 5)
+                 for i in range(start, end):
+                     marker = ">>>" if i + 1 == err_line else "   "
+                     console.print(f"[dim]{marker} {i+1:4d} | {lines[i]}[/dim]")
+        return False
 
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
+        f.write(new_content)
 
     after_hash = file_hash(file_path)
     if before_hash == after_hash:
@@ -1134,6 +1305,9 @@ def _apply_single_hunk(file_lines, hunk):
             best_score, best_pos = score, pos
     if best_pos is None or (len(expected) > 0 and best_score < len(expected) * 0.5):
         console.print(f"[bold red]  Hunk at line {orig_start}: context not found.[/bold red]")
+        console.print(f"[dim]  Expected context (first 3 lines):[/dim]")
+        for line in expected[:3]:
+            console.print(f"[dim]    {line}[/dim]")
         return None
     new_lines: list[str] = []
     file_pos = best_pos
@@ -1160,6 +1334,7 @@ def apply_patch_python(file_path: str, patch_content: str) -> bool:
     hunks = _parse_unified_diff(patch_content)
     if not hunks:
         console.print("[bold red]Python patch: no hunks parsed.[/bold red]")
+        console.print(f"[dim]  Raw patch content start: {patch_content[:100]!r}...[/dim]")
         return False
     current = file_lines
     for idx, hunk in enumerate(hunks, 1):
@@ -1206,20 +1381,83 @@ def apply_patch_shell(file_path: str, patch_content: str) -> bool:
     return True
 
 
-def apply_patch(file_path: str, patch_content: str) -> bool:
-    if "<<<SEARCH" in patch_content:
+def apply_patch_linerange(file_path: str, start_line: int, end_line: int, new_text: str) -> bool:
+    """Replace lines [start_line, end_line] (1-indexed, inclusive) with new_text.
+    This is the most reliable strategy when we know the exact error line numbers."""
+    before_hash = file_hash(file_path)
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception as e:
+        console.print(f"[bold red]apply_patch_linerange: can't read {file_path}: {e}[/bold red]")
+        return False
+
+    if start_line < 1 or end_line > len(lines) or start_line > end_line:
+        console.print(f"[bold red]apply_patch_linerange: invalid range {start_line}–{end_line} (file has {len(lines)} lines)[/bold red]")
+        return False
+
+    block = new_text
+    if block and not block.endswith("\n"):
+        block += "\n"
+
+    new_lines = lines[:start_line - 1] + [block] + lines[end_line:]
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+
+    after_hash = file_hash(file_path)
+    if before_hash == after_hash:
+        console.print("[bold red]Line-range patch: file unchanged.[/bold red]")
+        return False
+    console.print(
+        f"[green]  File changed ({before_hash[:8]} → {after_hash[:8]}) "
+        f"via line-range patch (lines {start_line}–{end_line}).[/green]"
+    )
+    return True
+
+
+def apply_patch(file_path: str, patch_content: str, hint_line: int | None = None) -> bool:
+    attempted = False
+    if re.search(r"<<<\s*SEARCH", patch_content):
+        attempted = True
         vprint("[dim]Trying str_replace applicator…[/dim]")
-        if apply_patch_strreplace(file_path, patch_content):
+        if apply_patch_strreplace(file_path, patch_content, hint_line=hint_line):
             return True
         vprint("[yellow]str_replace failed — trying unified diff…[/yellow]")
+    
     if "@@" in patch_content:
+        attempted = True
         vprint("[dim]Trying Python unified-diff applicator…[/dim]")
         if apply_patch_python(file_path, patch_content):
             return True
         vprint("[yellow]Python patch failed — falling back to shell patch…[/yellow]")
         return apply_patch_shell(file_path, patch_content)
-    console.print("[bold red]apply_patch: no recognisable patch format.[/bold red]")
+
+    if not attempted:
+        console.print("[bold red]apply_patch: no recognisable patch format.[/bold red]")
+        console.print(f"[dim]  Patch content starts with: {patch_content[:100]!r}...[/dim]")
     return False
+
+
+def sanitize_generated_code(code: str) -> str:
+    """
+    Auto-patch known patterns that always crash at runtime.
+    Applied before every Manim invocation — defence-in-depth.
+    """
+    # Rule 1: self.wait(tracker.get_remaining_duration()) → max(0.01, ...) guard
+    # Handles both bare call and calls with trailing whitespace/comments.
+    code = re.sub(
+        r"self\.wait\s*\(\s*tracker\.get_remaining_duration\s*\(\s*\)\s*\)",
+        "self.wait(max(0.01, tracker.get_remaining_duration()))",
+        code,
+    )
+    # Rule 2: catch any self.wait(0) or self.wait(0.0) literals too
+    code = re.sub(
+        r"self\.wait\s*\(\s*0(?:\.0+)?\s*\)",
+        "self.wait(0.01)",
+        code,
+    )
+    return code
+
 
 
 def write_code_to_file(output_file, code):
@@ -1258,12 +1496,15 @@ THE BROKEN LINES (>>> = crash line):
 BLUEPRINT:
 {blueprint}
 
-Output the COMPLETE fixed Python file in a single ```python block.
+Output the COMPLETE fixed Python file (the entire script) in a single ```python block.
+Do NOT use a patch.
 Target ~{original_lines} lines (±20%).
 """
     resp = safe_generate_content(client, model, prompt, _label=f"{model} [rewrite]")
     matches = list(re.finditer(r"```python\s*(.*?)```", resp.text, re.DOTALL | re.IGNORECASE))
     if not matches:
+        console.print("[bold red]Rewrite failure: No ```python block found in response.[/bold red]")
+        vprint(f"[dim]  Response start: {resp.text[:100]!r}...[/dim]")
         return None
     new_code = matches[-1].group(1).strip()
     ratio = len(new_code.splitlines()) / max(original_lines, 1)
@@ -1454,13 +1695,17 @@ def _normalise_diff_headers(patch: str, output_file: str) -> str:
 
 
 def _extract_lines_for_search(file_path, error_line, context_before=6, context_after=6):
-    with open(file_path, "r", encoding="utf-8") as f:
-        all_lines = f.readlines()
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception:
+        return None, None, None
+    
     start = max(0, error_line - context_before - 1)
-    end   = min(len(all_lines), error_line + context_after)
-    while start > 0 and all_lines[start].strip().startswith(("self.play(", "LaggedStart(", "with self")):
-        start -= 1
-    return all_lines[start:end], start + 1, end
+    end = min(len(lines), error_line + context_after)
+    extracted = lines[start:end]
+    vprint(f"[dim]  Extracted {len(extracted)} lines for SEARCH block (lines {start+1}–{end}).[/dim]")
+    return extracted, start + 1, end
 
 
 def _build_fix_prompt(
@@ -1468,30 +1713,32 @@ def _build_fix_prompt(
     search_lines, search_start, history_string, blueprint,
     no_audio_warning, audio_instructions,
 ):
-    if search_lines is not None:
-        search_text = "".join(search_lines)
-        output_format = f"""
-━━━ YOUR ONLY JOB ━━━
-Lines extracted VERBATIM (lines {search_start}–{search_start + len(search_lines) - 1}):
-```
-{search_text}```
-
-Output ONLY:
->>>REPLACE
-[fixed lines]
-<<<END
-"""
-    else:
-        output_format = """
-Output:
+    # Standard patch format instruction — always used now.
+    output_format = """
+Output a PATCH to fix the code.
+Format:
 ```
 <<<SEARCH
-[exact lines]
+[EXACT copy of the code to replace]
+[Must match the file content character-for-character]
+[Include all indentation and whitespace]
+[NO "..." or comments like "# rest of code"]
 >>>REPLACE
-[fixed]
+[The fixed code]
 <<<END
 ```
 """
+
+    focus_section = ""
+    if search_lines:
+        search_text = "".join(search_lines)
+        focus_section = f"""
+━━━ FOCUS AREA (Context around crash) ━━━
+Lines {search_start}–{search_start + len(search_lines) - 1}:
+```
+{search_text}```
+"""
+
     return f"""Expert Manim developer. Fix this crash.
 
 {MANIM_CHEAT_SHEET}
@@ -1506,7 +1753,7 @@ Output:
 
 ━━━ BROKEN LINES (>>> = crash) ━━━
 {surgical_context}
-
+{focus_section}
 ━━━ PAST FAILURES ━━━
 {history_string if history_string.strip() else "(none)"}
 
@@ -1525,11 +1772,11 @@ def main():
     parser = argparse.ArgumentParser(description="Standalone Auto-Fixing Manim Pipeline")
     parser.add_argument("--prompt",             type=str)
     parser.add_argument("--output",             type=str, default="output_scene.py")
-    parser.add_argument("--audio",              action="store_true",
-                        help="Enable voiceover (gTTS by default)")
+    parser.add_argument("--no-audio",           action="store_true",
+                        help="Disable voiceover")
     parser.add_argument("--audio-model",        type=str, default=None, metavar="MODEL",
                         help=(
-                            "Use Gemini TTS instead of gTTS. Implies --audio. "
+                            "Use Gemini TTS instead of gTTS. Implies audio. "
                             "E.g.: gemini-2.5-flash-preview-tts  |  gemini-2.5-pro-preview-tts"
                         ))
     parser.add_argument("--audio-voice",        type=str, default="Kore", metavar="VOICE",
@@ -1549,7 +1796,9 @@ def main():
     global VERBOSE
     VERBOSE = args.verbose
 
-    use_audio        = args.audio or bool(args.audio_model)
+    # Audio defaults to True unless --no-audio is passed.
+    # If --audio-model is passed, it overrides any --no-audio.
+    use_audio        = (not args.no_audio) or bool(args.audio_model)
     use_gemini_tts   = bool(args.audio_model)
     gemini_tts_model = args.audio_model or ""
     gemini_tts_voice = args.audio_voice
@@ -1562,24 +1811,36 @@ def main():
     audio_instructions = ""
     if use_gemini_tts:
         audio_instructions = f"""
-CRITICAL AUDIO REQUIREMENT (Gemini TTS):
+CRITICAL AUDIO SYNC AND HIGHLIGHTING (Gemini TTS):
 1. Imports:
    from manim_voiceover import VoiceoverScene
    from gemini_tts_service import GeminiTTSService
 2. Inherit from VoiceoverScene.
 3. In construct():
    self.set_speech_service(GeminiTTSService(model="{gemini_tts_model}", voice="{gemini_tts_voice}"))
-4. Wrap ALL animations: `with self.voiceover(text="...") as tracker:`
+4. SYNC: BREAK narration into granular chunks (1-2 sentences). 
+   Wrap EACH chunk in: `with self.voiceover(text="...") as tracker:`
+   Animations inside must match the audio.
+   ALWAYS end each chunk with: `self.wait(tracker.get_remaining_duration())`
+5. HIGHLIGHTING (VGROUP DECOMPOSITION): Do NOT use character indexing (e.g. `eq[0][3:5]`). It crashes.
+   Instead, build equations as VGroups of smaller MathTex objects and highlight the specific object.
+   Example: `eq = VGroup(MathTex("x^2"), MathTex("+"), MathTex("y")).arrange(RIGHT)` -> `self.play(Indicate(eq[0]))`
 NOTE: gemini_tts_service.py lives in the same directory — do NOT redefine it.
 """
     elif use_audio:
         audio_instructions = """
-CRITICAL AUDIO REQUIREMENT:
+CRITICAL AUDIO SYNC AND HIGHLIGHTING:
 1. from manim_voiceover import VoiceoverScene
    from manim_voiceover.services.gtts import GTTSService
 2. Inherit from VoiceoverScene.
 3. self.set_speech_service(GTTSService(lang="en"))
-4. Wrap ALL animations: `with self.voiceover(text="...") as tracker:`
+4. SYNC: BREAK narration into granular chunks (1-2 sentences). 
+   Wrap EACH chunk in: `with self.voiceover(text="...") as tracker:`
+   Animations inside must match the audio.
+   ALWAYS end each chunk with: `self.wait(tracker.get_remaining_duration())`
+5. HIGHLIGHTING (VGROUP DECOMPOSITION): Do NOT use character indexing (e.g. `eq[0][3:5]`). It crashes.
+   Instead, build equations as VGroups of smaller MathTex objects and highlight the specific object.
+   Example: `eq = VGroup(MathTex("x^2"), MathTex("+"), MathTex("y")).arrange(RIGHT)` -> `self.play(Indicate(eq[0]))`
 """
 
     no_audio_warning = (
@@ -1592,6 +1853,10 @@ CRITICAL AUDIO REQUIREMENT:
     except Exception as e:
         console.print(f"[bold red]Failed to init google.genai: {e}[/bold red]")
         return
+
+    # Clear stale or corrupted audio cache before starting.
+    if use_audio and not args.skip_gen:
+        purge_voiceover_cache()
 
     # ── Initial generation ─────────────────────────────────────────────────
     if not args.skip_gen:
@@ -1707,6 +1972,15 @@ NOTE: gemini_tts_service.py is in the same directory.
 
         with open(output_file, "r", encoding="utf-8") as f:
             current_code = f.read()
+
+        # Auto-fix known zero-duration crash patterns before every render attempt
+        sanitized = sanitize_generated_code(current_code)
+        if sanitized != current_code:
+            console.print("[cyan]  Auto-sanitizer: patched zero-duration wait(s).[/cyan]")
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(sanitized)
+            current_code = sanitized
+
         current_hash = file_hash(output_file)
         vprint(
             f"[dim]  {file_link(output_file, os.path.basename(output_file))}  "
@@ -1903,7 +2177,7 @@ NOTE: gemini_tts_service.py is in the same directory.
                         console.print("[bold yellow]Applying vision patch…[/bold yellow]")
                         if VERBOSE:
                             console.print(Syntax(vision_patch, "text", theme="monokai", line_numbers=True))
-                        success = apply_patch(output_file, vision_patch)
+                        success = apply_patch(output_file, vision_patch, hint_line=None)
                         if success:
                             console.print("[bold green]✓ Vision patch applied.[/bold green]")
                             consecutive_patch_failures = 0
@@ -1990,14 +2264,7 @@ NOTE: gemini_tts_service.py is in the same directory.
         patch_content      = None
         patch_display_lang = "text"
 
-        if search_lines is not None:
-            replace_match = re.search(r">>>REPLACE\s*\n(.*?)<<<END", response_text, re.DOTALL)
-            if replace_match:
-                search_text   = "".join(search_lines)
-                patch_content = f"<<<SEARCH\n{search_text}>>>REPLACE\n{replace_match.group(1)}<<<END\n"
-                if VERBOSE:
-                    console.print(f"[bold yellow]Pre-built str_replace patch (lines {search_start}–{search_end}):[/bold yellow]")
-                    console.print(Syntax(patch_content, "text", theme="monokai", line_numbers=True))
+        # (Removed apply_patch_linerange block — now relying on explicit SEARCH/REPLACE from LLM)
 
         if patch_content is None:
             if "<<<SEARCH" in response_text:
@@ -2016,10 +2283,11 @@ NOTE: gemini_tts_service.py is in the same directory.
             if patch_display_lang != "text" and VERBOSE:
                 console.print(f"[bold yellow]Patch ({patch_display_lang}):[/bold yellow]")
                 console.print(Syntax(patch_content, patch_display_lang, theme="monokai", line_numbers=True))
-            success = apply_patch(output_file, patch_content)
+            success = apply_patch(output_file, patch_content, hint_line=search_start)
             if success:
                 console.print("[bold green]✓ Patch applied.[/bold green]")
-                consecutive_patch_failures = 0
+                # Do NOT reset consecutive_patch_failures here; only reset on successful RENDER.
+                # consecutive_patch_failures = 0 
                 error_history[-1]["patch_attempted"] = patch_content
                 if search_start:
                     last_known_error_line = search_start
@@ -2027,7 +2295,11 @@ NOTE: gemini_tts_service.py is in the same directory.
                 console.print("[bold red]✗ Patch failed.[/bold red]")
                 consecutive_patch_failures += 1
         else:
-            console.print("[bold red]No recognisable patch block returned.[/bold red]")
+            has_python = "```python" in response_text
+            console.print(f"[bold red]No recognisable patch block returned (Python block present: {has_python}).[/bold red]")
+            console.print(f"[dim]  Response started with: {response_text.strip()[:140]!r}...[/dim]")
+            if has_python and consecutive_patch_failures < rewrite_threshold - 1:
+                console.print(f"[dim]  (Note: rewrite threshold is {rewrite_threshold}; current failure count: {consecutive_patch_failures})[/dim]")
             if VERBOSE:
                 console.print(response_text)
             consecutive_patch_failures += 1
